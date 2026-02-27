@@ -7,9 +7,26 @@ function cloneHistory(history) {
 
 function cloneRatifiedLog(ratifiedLog) {
   return ratifiedLog.map((event) => ({
-    ...event,
+    kind: event.kind,
+    id: event.id,
+    intentId: event.intentId,
+    at: event.at,
+    reason: event.reason,
     effects: Array.isArray(event.effects) ? event.effects.map((effect) => ({ ...effect })) : [],
     grants: Array.isArray(event.grants) ? [...event.grants] : []
+  }));
+}
+
+function cloneReceiptLog(receiptLog) {
+  return receiptLog.map((receipt) => ({
+    kind: receipt.kind,
+    authority: receipt.authority,
+    at: receipt.at,
+    intentId: receipt.intentId,
+    ratifiedId: receipt.ratifiedId,
+    ref: receipt.ref,
+    sig: receipt.sig,
+    meta: receipt.meta && typeof receipt.meta === "object" ? { ...receipt.meta } : undefined
   }));
 }
 
@@ -29,7 +46,8 @@ function createBaseState(graph) {
     log: [],
     revealedStorylets: {},
     intentLog: [],
-    ratifiedLog: []
+    ratifiedLog: [],
+    receiptLog: []
   };
 }
 
@@ -69,7 +87,7 @@ function applyNavigation(intentEvent, state) {
   }
 }
 
-export function replay({ graph, initialState, intentLog = [], ratifiedLog = [], ratifier, clockLike }) {
+export function replay({ graph, initialState, intentLog = [], ratifiedLog = [], receiptLog = [], ratifier, clockLike }) {
   void ratifier;
   void clockLike;
 
@@ -83,7 +101,8 @@ export function replay({ graph, initialState, intentLog = [], ratifiedLog = [], 
         log: initialState.log.map((entry) => ({ ...entry })),
         revealedStorylets: { ...initialState.revealedStorylets },
         intentLog: [],
-        ratifiedLog: []
+        ratifiedLog: [],
+        receiptLog: cloneReceiptLog(initialState.receiptLog ?? [])
       }
     : createBaseState(graph);
 
@@ -91,6 +110,8 @@ export function replay({ graph, initialState, intentLog = [], ratifiedLog = [], 
     const intentEvent = intentLog[index];
     const ratifiedEvent = ratifiedLog[index] ?? {
       kind: "ratified",
+      id: `ratified-${index + 1}`,
+      intentId: intentEvent.id ?? `intent-${index + 1}`,
       effects: [],
       grants: [],
       at: intentEvent.at
@@ -98,6 +119,7 @@ export function replay({ graph, initialState, intentLog = [], ratifiedLog = [], 
 
     base.intentLog.push({
       kind: "intent",
+      id: intentEvent.id ?? `intent-${index + 1}`,
       type: intentEvent.type,
       payload: { ...(intentEvent.payload ?? {}) },
       at: intentEvent.at
@@ -111,11 +133,27 @@ export function replay({ graph, initialState, intentLog = [], ratifiedLog = [], 
     applyGrants(ratifiedEvent.grants ?? [], base);
     base.ratifiedLog.push({
       kind: "ratified",
+      id: ratifiedEvent.id ?? `ratified-${index + 1}`,
+      intentId: ratifiedEvent.intentId ?? (intentEvent.id ?? `intent-${index + 1}`),
       effects: (ratifiedEvent.effects ?? []).map((effect) => ({ ...effect })),
       grants: [...(ratifiedEvent.grants ?? [])],
       at: ratifiedEvent.at,
       reason: ratifiedEvent.reason
     });
+
+    const receipt = receiptLog[index];
+    if (receipt) {
+      base.receiptLog.push({
+        kind: "receipt",
+        authority: receipt.authority,
+        at: receipt.at,
+        intentId: receipt.intentId ?? (intentEvent.id ?? `intent-${index + 1}`),
+        ratifiedId: receipt.ratifiedId ?? (ratifiedEvent.id ?? `ratified-${index + 1}`),
+        ref: receipt.ref,
+        sig: receipt.sig,
+        meta: receipt.meta && typeof receipt.meta === "object" ? { ...receipt.meta } : undefined
+      });
+    }
 
     applyNavigation(intentEvent, base);
   }
@@ -128,7 +166,14 @@ export function replay({ graph, initialState, intentLog = [], ratifiedLog = [], 
     capabilities: { ...base.capabilities },
     log: base.log.map((entry) => ({ ...entry })),
     revealedStorylets: { ...base.revealedStorylets },
-    intentLog: base.intentLog.map((event) => ({ ...event, payload: { ...event.payload } })),
-    ratifiedLog: cloneRatifiedLog(base.ratifiedLog)
+    intentLog: base.intentLog.map((event) => ({
+      kind: event.kind,
+      id: event.id,
+      type: event.type,
+      payload: { ...event.payload },
+      at: event.at
+    })),
+    ratifiedLog: cloneRatifiedLog(base.ratifiedLog),
+    receiptLog: cloneReceiptLog(base.receiptLog)
   };
 }

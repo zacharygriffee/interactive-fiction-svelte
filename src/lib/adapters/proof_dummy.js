@@ -51,4 +51,21 @@ export class DummyProofAdapter {
       alg: this._alg
     };
   }
+
+  verify(input, signature, identity) {
+    if (identity && (identity.pubkey !== this._pubkey || identity.alg !== this._alg)) {
+      return false;
+    }
+
+    if (!signature || typeof signature.sig !== "string" || typeof signature.alg !== "string") {
+      return false;
+    }
+
+    if (signature.alg !== this._alg) {
+      return false;
+    }
+
+    const expected = this.sign(input);
+    return expected.sig === signature.sig && expected.alg === signature.alg;
+  }
 }

@@ -22,4 +22,6 @@ test("proof port contract: deterministic signatures", (t) => {
   t.alike(second, third);
   t.is(typeof first.sig, "string");
   t.is(first.alg, "dummy-fnv1a");
+  t.is(proof.verify("hello", first, proof.getPublicIdentity()), true);
+  t.is(proof.verify("bye", first, proof.getPublicIdentity()), false);
 });

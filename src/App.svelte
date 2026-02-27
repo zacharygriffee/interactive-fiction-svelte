@@ -3,15 +3,28 @@
   import NodeView from "./lib/components/NodeView.svelte";
   import ChoiceList from "./lib/components/ChoiceList.svelte";
   import DebugPanel from "./lib/components/DebugPanel.svelte";
+  import DevLanding from "./lib/components/DevLanding.svelte";
   import { ACTION_TYPES } from "./lib/story/types.js";
+  import { getMode, hasStorySelection, isDevMode } from "./lib/app/mode.js";
 
   export let pear;
   export let driver;
 
   let snapshot = null;
   let errorText = "";
+  let mode = "play";
+  let devMode = false;
+  let storySelected = false;
+
+  $: showLanding = devMode && !storySelected;
+  $: showRuntime = !showLanding;
 
   onMount(() => {
+    const runtimeSearch = typeof globalThis?.location?.search === "string" ? globalThis.location.search : "";
+    mode = getMode({ search: runtimeSearch });
+    devMode = isDevMode({ search: runtimeSearch });
+    storySelected = hasStorySelection(runtimeSearch);
+
     if (!driver || typeof driver.init !== "function") {
       errorText = "Missing StoryDriver instance";
       return;
@@ -49,24 +62,38 @@
   }
 </script>
 
-<div id="bar"><pear-ctrl></pear-ctrl></div>
-<main>
-  <h1>Interactive Fiction Runtime</h1>
-  {#if pear}
+{#if pear}
+  <div id="bar"><pear-ctrl></pear-ctrl></div>
+{/if}
+
+<main data-mode={mode} class:dev-mode={devMode} class:play-mode={!devMode}>
+  {#if devMode}
+    <h1>Interactive Fiction Runtime — Dev Mode</h1>
+  {/if}
+
+  {#if pear && devMode}
     <p>Pear runtime: {pear.version}</p>
+  {/if}
+
+  {#if showLanding}
+    <DevLanding />
   {/if}
 
   {#if errorText}
     <p class="error">{errorText}</p>
   {/if}
 
-  {#if snapshot}
-    <NodeView node={snapshot.node} visibleStorylets={snapshot.visibleStorylets} />
-    <ChoiceList choices={snapshot.availableChoices} onChoose={onChoose} />
-    <button type="button" on:click={goBack}>Go Back</button>
-    <DebugPanel snapshot={snapshot} />
-  {:else}
-    <p>Loading...</p>
+  {#if showRuntime}
+    {#if snapshot}
+      <NodeView node={snapshot.node} visibleStorylets={snapshot.visibleStorylets} />
+      <ChoiceList choices={snapshot.availableChoices} onChoose={onChoose} />
+      <button type="button" on:click={goBack}>Go Back</button>
+      {#if devMode}
+        <DebugPanel snapshot={snapshot} />
+      {/if}
+    {:else}
+      <p>Loading...</p>
+    {/if}
   {/if}
 </main>
 
@@ -87,11 +114,22 @@
   }
 
   main {
-    max-width: 740px;
     margin: 24px auto;
     padding: 0 16px 32px;
     display: grid;
     gap: 12px;
+  }
+
+  .dev-mode {
+    max-width: 840px;
+  }
+
+  .play-mode {
+    max-width: 720px;
+  }
+
+  h1 {
+    margin: 0;
   }
 
   .error {

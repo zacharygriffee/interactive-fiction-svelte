@@ -9,6 +9,9 @@
 /**
  * @typedef {Object} ProvisionalPort
  * @property {(cb: (message: ProvisionalMessage) => void) => (() => void)} subscribe
+ * Notes:
+ * - Implementations should emit messages in arrival order per subscription.
+ * - Consumers may drop/trim messages (for example via tail limits); no backpressure is assumed.
  */
 
 /**

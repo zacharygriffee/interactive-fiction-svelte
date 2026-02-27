@@ -3,6 +3,8 @@
  * @property {"receipt"} kind
  * @property {string} authority
  * @property {number} at
+ * @property {string=} intentId
+ * @property {string=} ratifiedId
  * @property {string=} ref
  * @property {string=} sig
  * @property {object=} meta
@@ -16,7 +18,7 @@
 
 /**
  * @typedef {Object} AuthorityPort
- * @property {(input: { state: object, intentEvent: object, graph: object }) => (AuthorityRatifyResult|Promise<AuthorityRatifyResult>)} ratifyIntent
+ * @property {(input: { state: object, intentEvent: object, graph: object, proof?: object }) => (AuthorityRatifyResult|Promise<AuthorityRatifyResult>)} ratifyIntent
  * @property {(() => void)=} close
  */
 
@@ -26,6 +28,6 @@
  */
 export function assertAuthorityPort(value) {
   if (!value || typeof value.ratifyIntent !== "function") {
-    throw new Error("AuthorityPort must implement ratifyIntent({ state, intentEvent, graph })");
+    throw new Error("AuthorityPort must implement ratifyIntent({ state, intentEvent, graph, proof? })");
   }
 }

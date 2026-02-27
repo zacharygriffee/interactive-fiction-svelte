@@ -13,7 +13,9 @@
 /**
  * @typedef {Object} ProofPort
  * @property {() => ProofIdentity} getPublicIdentity
+ * Signatures should cover canonical serialized bytes from core checkpoint/event helpers.
  * @property {(input: Uint8Array|string) => ProofSignature} sign
+ * @property {(input: Uint8Array|string, signature: ProofSignature, identity?: ProofIdentity) => boolean=} verify
  */
 
 /**

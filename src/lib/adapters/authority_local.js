@@ -22,6 +22,7 @@ export class LocalAuthorityAdapter {
     const grants = Array.isArray(decision?.grants) ? [...decision.grants] : [];
 
     const ratifiedEvent = createRatifiedEvent({
+      intentId: intentEvent?.id,
       effects,
       grants,
       at: this._clock.now(),
@@ -31,7 +32,9 @@ export class LocalAuthorityAdapter {
     const receipt = {
       kind: "receipt",
       authority: this._authorityName,
-      at: Number.isFinite(intentEvent?.at) ? intentEvent.at : ratifiedEvent.at
+      at: Number.isFinite(intentEvent?.at) ? intentEvent.at : ratifiedEvent.at,
+      intentId: intentEvent?.id,
+      ratifiedId: ratifiedEvent?.id
     };
 
     return {

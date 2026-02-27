@@ -1,6 +1,6 @@
 /**
  * @typedef {Object} GraphResolverPort
- * @property {(input?: { concernId?: string }) => object} getGraph
+ * @property {(input?: { concernId?: string, storyId?: string }) => object} getGraph
  */
 
 /**
@@ -9,6 +9,6 @@
  */
 export function assertGraphResolverPort(value) {
   if (!value || typeof value.getGraph !== "function") {
-    throw new Error("GraphResolverPort must implement getGraph({ concernId? })");
+    throw new Error("GraphResolverPort must implement getGraph({ concernId?, storyId? })");
   }
 }

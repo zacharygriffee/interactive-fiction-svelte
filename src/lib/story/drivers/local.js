@@ -30,6 +30,7 @@ function cloneEffectsList(effects = []) {
 function cloneIntentLog(intentLog) {
   return intentLog.map((event) => ({
     kind: event.kind,
+    id: event.id,
     type: event.type,
     payload: { ...(event.payload ?? {}) },
     at: event.at
@@ -39,6 +40,8 @@ function cloneIntentLog(intentLog) {
 function cloneRatifiedLog(ratifiedLog) {
   return ratifiedLog.map((event) => ({
     kind: event.kind,
+    id: event.id,
+    intentId: event.intentId,
     effects: cloneEffectsList(event.effects ?? []),
     grants: [...(event.grants ?? [])],
     at: event.at,
@@ -46,9 +49,23 @@ function cloneRatifiedLog(ratifiedLog) {
   }));
 }
 
+function cloneReceiptLog(receiptLog) {
+  return receiptLog.map((receipt) => ({
+    kind: receipt.kind,
+    authority: receipt.authority,
+    at: receipt.at,
+    intentId: receipt.intentId,
+    ratifiedId: receipt.ratifiedId,
+    ref: receipt.ref,
+    sig: receipt.sig,
+    meta: isRecord(receipt.meta) ? { ...receipt.meta } : undefined
+  }));
+}
+
 function cloneIntentEvent(event) {
   return {
     kind: event.kind,
+    id: event.id,
     type: event.type,
     payload: { ...(event.payload ?? {}) },
     at: event.at
@@ -58,10 +75,25 @@ function cloneIntentEvent(event) {
 function cloneRatifiedEvent(event) {
   return {
     kind: event.kind,
+    id: event.id,
+    intentId: event.intentId,
     effects: cloneEffectsList(event.effects ?? []),
     grants: [...(event.grants ?? [])],
     at: event.at,
     reason: event.reason
+  };
+}
+
+function cloneReceiptEvent(receipt) {
+  return {
+    kind: receipt.kind,
+    authority: receipt.authority,
+    at: receipt.at,
+    intentId: receipt.intentId,
+    ratifiedId: receipt.ratifiedId,
+    ref: receipt.ref,
+    sig: receipt.sig,
+    meta: isRecord(receipt.meta) ? { ...receipt.meta } : undefined
   };
 }
 
@@ -119,6 +151,7 @@ function isValidIntentEvent(event) {
   return (
     isRecord(event) &&
     event.kind === "intent" &&
+    (event.id === undefined || typeof event.id === "string") &&
     typeof event.type === "string" &&
     isRecord(event.payload) &&
     typeof event.at === "number"
@@ -136,6 +169,40 @@ function isValidRatifiedEvent(event) {
     if (typeof grant !== "string") {
       return false;
     }
+  }
+  if (event.id !== undefined && typeof event.id !== "string") {
+    return false;
+  }
+  if (event.intentId !== undefined && typeof event.intentId !== "string") {
+    return false;
+  }
+  return true;
+}
+
+function isValidReceiptEvent(receipt) {
+  if (!isRecord(receipt) || receipt.kind !== "receipt") {
+    return false;
+  }
+  if (typeof receipt.authority !== "string" || receipt.authority.length === 0) {
+    return false;
+  }
+  if (typeof receipt.at !== "number") {
+    return false;
+  }
+  if (receipt.intentId !== undefined && typeof receipt.intentId !== "string") {
+    return false;
+  }
+  if (receipt.ratifiedId !== undefined && typeof receipt.ratifiedId !== "string") {
+    return false;
+  }
+  if (receipt.ref !== undefined && typeof receipt.ref !== "string") {
+    return false;
+  }
+  if (receipt.sig !== undefined && typeof receipt.sig !== "string") {
+    return false;
+  }
+  if (receipt.meta !== undefined && !isRecord(receipt.meta)) {
+    return false;
   }
   return true;
 }
@@ -187,6 +254,11 @@ function isValidLoadedState(value, graph) {
   if (value.intentLog.length !== value.ratifiedLog.length) {
     return false;
   }
+  if (value.receiptLog !== undefined) {
+    if (!Array.isArray(value.receiptLog) || !value.receiptLog.every(isValidReceiptEvent)) {
+      return false;
+    }
+  }
 
   const last = value.history[value.history.length - 1];
   if (last.nodeId !== value.currentNodeId) {
@@ -206,7 +278,8 @@ function cloneState(state) {
     log: cloneLog(state.log),
     revealedStorylets: { ...state.revealedStorylets },
     intentLog: cloneIntentLog(state.intentLog),
-    ratifiedLog: cloneRatifiedLog(state.ratifiedLog)
+    ratifiedLog: cloneRatifiedLog(state.ratifiedLog),
+    receiptLog: cloneReceiptLog(state.receiptLog ?? [])
   };
 }
 
@@ -225,7 +298,8 @@ function createFreshState({ startNodeId, startAt, capabilities }) {
     log: [],
     revealedStorylets: {},
     intentLog: [],
-    ratifiedLog: []
+    ratifiedLog: [],
+    receiptLog: []
   };
 }
 
@@ -273,6 +347,7 @@ class NoopAuthority {
   ratifyIntent({ intentEvent }) {
     return {
       ratifiedEvent: createRatifiedEvent({
+        intentId: intentEvent?.id,
         effects: cloneEffectsList(intentEvent?.payload?.effects ?? []),
         grants: [],
         at: this._clock.now()
@@ -381,6 +456,7 @@ export class LocalDriver extends StoryDriver {
     const context = this._buildActionContext(action);
 
     const intentEvent = createIntentEvent({
+      id: this._nextIntentId(),
       type: action.type,
       payload: context.payload,
       at: this._clock.now()
@@ -406,6 +482,7 @@ export class LocalDriver extends StoryDriver {
     }
 
     const intentEvent = createIntentEvent({
+      id: this._nextIntentId(),
       type: INTERNAL_ACTION_TYPES.APPLY_RATIFIED,
       payload: {
         effects: cloneEffectsList(effects)
@@ -449,6 +526,38 @@ export class LocalDriver extends StoryDriver {
     if (!this._initialized || !this._state) {
       throw new Error("Driver not initialized");
     }
+  }
+
+  _nextIntentId() {
+    return `intent-${this._state.intentLog.length + 1}`;
+  }
+
+  _nextRatifiedId() {
+    return `ratified-${this._state.ratifiedLog.length + 1}`;
+  }
+
+  _normalizeReceipt(receipt, { intentEvent, ratifiedEvent }) {
+    const normalized = {
+      kind: "receipt",
+      authority: typeof receipt?.authority === "string" && receipt.authority.length > 0
+        ? receipt.authority
+        : "unknown",
+      at: Number.isFinite(receipt?.at) ? receipt.at : ratifiedEvent.at,
+      intentId: intentEvent?.id,
+      ratifiedId: ratifiedEvent?.id
+    };
+
+    if (typeof receipt?.ref === "string") {
+      normalized.ref = receipt.ref;
+    }
+    if (typeof receipt?.sig === "string") {
+      normalized.sig = receipt.sig;
+    }
+    if (isRecord(receipt?.meta)) {
+      normalized.meta = { ...receipt.meta };
+    }
+
+    return normalized;
   }
 
   _getNode(nodeId) {
@@ -582,6 +691,10 @@ export class LocalDriver extends StoryDriver {
     const grants = Array.isArray(authorityRatified?.grants) ? [...authorityRatified.grants] : [];
 
     const ratifiedEvent = createRatifiedEvent({
+      id: typeof authorityRatified?.id === "string" ? authorityRatified.id : this._nextRatifiedId(),
+      intentId: typeof authorityRatified?.intentId === "string"
+        ? authorityRatified.intentId
+        : intentEvent.id,
       effects,
       grants,
       at: Number.isFinite(authorityRatified?.at) ? authorityRatified.at : this._clock.now(),
@@ -598,6 +711,11 @@ export class LocalDriver extends StoryDriver {
     }
 
     this._state.ratifiedLog.push(cloneRatifiedEvent(ratifiedEvent));
+    const receipt = this._normalizeReceipt(result?.receipt, {
+      intentEvent,
+      ratifiedEvent
+    });
+    this._state.receiptLog.push(cloneReceiptEvent(receipt));
     return ratifiedEvent;
   }
 
@@ -664,6 +782,7 @@ export class LocalDriver extends StoryDriver {
       const effects = cloneEffectsList(toReveal.flatMap((storylet) => storylet.effectsOnReveal ?? []));
 
       const intentEvent = createIntentEvent({
+        id: this._nextIntentId(),
         type: INTERNAL_ACTION_TYPES.REVEAL_STORYLETS,
         payload: {
           nodeId: node.id,
@@ -696,7 +815,7 @@ export class LocalDriver extends StoryDriver {
     if (!latest) {
       return;
     }
-    if (latest.type !== intentEvent.type || latest.at !== intentEvent.at) {
+    if (latest.id !== intentEvent.id) {
       return;
     }
 
@@ -720,7 +839,8 @@ export class LocalDriver extends StoryDriver {
       logTail: cloneLog(logTail),
       provisionalTail: this._provisionalTail.map((item) => ({ ...item })),
       intentLog: cloneIntentLog(this._state.intentLog),
-      ratifiedLog: cloneRatifiedLog(this._state.ratifiedLog)
+      ratifiedLog: cloneRatifiedLog(this._state.ratifiedLog),
+      receiptLog: cloneReceiptLog(this._state.receiptLog)
     };
 
     if (consumeNewlyRevealed) {
