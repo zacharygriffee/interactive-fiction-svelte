@@ -1,3 +1,13 @@
+<script>
+  import DevMediaGallery from "./DevMediaGallery.svelte";
+
+  let showGallery = false;
+
+  function toggleGallery() {
+    showGallery = !showGallery;
+  }
+</script>
+
 <section class="dev-landing">
   <h2>Developer Landing</h2>
   <p>
@@ -21,8 +31,19 @@
   <ul>
     <li><code>npm run validate-graph</code></li>
     <li><code>npm run validate-graph:all</code></li>
+    <li><code>npm run validate-assets</code></li>
     <li><code>npm test</code></li>
   </ul>
+
+  <div class="gallery-toggle">
+    <button type="button" on:click={toggleGallery}>
+      {showGallery ? "Hide Media Gallery" : "Media Gallery"}
+    </button>
+  </div>
+
+  {#if showGallery}
+    <DevMediaGallery />
+  {/if}
 </section>
 
 <style>
@@ -48,5 +69,9 @@
 
   a {
     color: #1a4f93;
+  }
+
+  .gallery-toggle button {
+    width: fit-content;
   }
 </style>

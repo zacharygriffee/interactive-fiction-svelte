@@ -19,6 +19,13 @@ export const terminalDossierAuthorGraph = {
             fx.pushLog("info", "TRACE: handshake fragment cached")
           ]
         }),
+        storylet(
+          "still-frame",
+          "A still frame flickers in the corner monitor.<br /><img src=\"/assets/demo.png\" alt=\"signal still frame\" />",
+          {
+            priority: 2
+          }
+        ),
         storylet("liaison-whisper", "A second voice appears only after your probe and asks for confirmation.", {
           priority: 5,
           requires: [

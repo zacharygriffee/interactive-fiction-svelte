@@ -17,6 +17,7 @@
     "start": "node scripts/start.js",
     "validate-graph": "node scripts/validate-graph.js",
     "validate-graph:all": "node scripts/validate-graph-all.js",
+    "validate-assets": "node scripts/validate-assets.js",
     "watch-build": "nodemon --watch src --ext js,svelte --exec 'npm run build'",
     "test": "brittle test/*.test.js",
     "clean": "rm -rf dist"

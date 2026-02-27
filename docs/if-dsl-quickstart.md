@@ -44,6 +44,39 @@ import {
 - `fx.inc("key", 1)`
 - `fx.pushLog("info", "text")`
 
+## Media (HTTP-served)
+
+`body(...)` and `storylet(..., body, ...)` can include HTML for media when served over HTTP.
+
+Examples:
+
+- image: `<img src="/assets/demo.png" alt="demo" />`
+- video: `<video src="/assets/demo.mp4" controls playsinline></video>`
+- audio: `<audio src="/assets/demo.mp3" controls></audio>`
+- external link: `<a href="https://example.com" target="_blank" rel="noreferrer noopener">Open link</a>`
+
+Use `/assets/...` paths and serve through `npm run dev` or `npm run start`. `file://` is not supported.
+
+## Media Snippets
+
+Copy/paste snippets:
+
+- Image with alt + width:
+  - `<img src="/assets/demo.png" alt="Signal still frame" width="320" />`
+- Video with poster + controls:
+  - `<video src="/assets/demo.mp4" poster="/assets/demo-poster.jpg" controls playsinline></video>`
+- Looping muted inline video:
+  - `<video src="/assets/demo-loop.mp4" autoplay muted loop playsinline></video>`
+- GIF recommendation:
+  - Use `<img src="/assets/demo.gif" alt="Looping signal glitch" />` for GIF files.
+- Audio with controls:
+  - `<audio src="/assets/demo.mp3" controls></audio>`
+- External link (safe attrs):
+  - `<a href="https://example.com" target="_blank" rel="noreferrer noopener">Open external reference</a>`
+
+Safety note:
+- Authored HTML is treated as trusted content in this repo. Do not load untrusted remote story bundles without sanitization.
+
 ## Hard rules
 
 - Arrays only for `choices([...])`, `storylets([...])`, `requires: []`, `effects: []`, `effectsOnReveal: []`

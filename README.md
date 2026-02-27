@@ -48,6 +48,8 @@ The following remain internal and may change without notice:
 - Runtime graph export stays stable: `src/lib/story/graph.js` (`storyGraph = { startNodeId, nodesById }`)
 - Graph validation runs at startup via `src/lib/story/dsl/validate.js`
 - Quickstart doc: `docs/if-dsl-quickstart.md`
+- Media in passages/storylets is HTTP-served via `/assets/...` (for example `<img src="/assets/demo.png" alt="demo" />`); `file://` loading is not supported.
+- Media embed snippets live in `docs/if-dsl-quickstart.md` under “Media Snippets”.
 
 Authoring rules:
 - Edit `src/lib/story/graph.author.js` for story content changes.
@@ -72,6 +74,7 @@ Future ecology integration should plug in via custom Authority + Provisional ada
 - `npm run start` prepares and serves `dist/` on `http://localhost:4173` in Play mode.
 - `npm run validate-graph` validates the default graph shape.
 - `npm run validate-graph:all` validates default + in-repo example graphs.
+- `npm run validate-assets` validates `/assets/...` references in known graphs and reports missing/unused files.
 - `npm run test` runs brittle tests for non-UI story logic.
 
 ## Runtime URL Controls
