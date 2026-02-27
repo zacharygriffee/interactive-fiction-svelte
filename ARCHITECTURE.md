@@ -55,6 +55,11 @@ Core provides deterministic helpers in `src/lib/story/events/`:
 - checkpoint hash chain generation
 - optional proof-backed artifact signing
 
+Checkpoint commitment payload policy:
+- default commits `intentLog` + `ratifiedLog` only
+- `includeReceipts: true` additionally commits `receiptLog`
+- hash algorithm is `sha256`
+
 These helpers are additive seams for future attestation work and do not add real transport/crypto dependencies.
 
 ### Identity artifact portability

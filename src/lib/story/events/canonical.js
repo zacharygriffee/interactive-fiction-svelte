@@ -23,7 +23,7 @@ export function canonicalizeValue(value) {
   if (value && typeof value === "object") {
     const keys = Object.keys(value)
       .filter((key) => value[key] !== undefined)
-      .sort((a, b) => a.localeCompare(b));
+      .sort();
 
     const pairs = keys.map((key) => `${JSON.stringify(key)}:${canonicalizeValue(value[key])}`);
     return `{${pairs.join(",")}}`;

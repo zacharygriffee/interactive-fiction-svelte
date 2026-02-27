@@ -35,6 +35,15 @@ Programmatic flow:
 3. `encodeIdentityArtifact(artifact)` for copy/export
 4. `decodeIdentityArtifact(str)` + `verifyIdentityArtifact({ artifact, proof })` on import
 
+Checkpoint commitment payload:
+- Default (`includeReceipts: false`): commits to `intentLog` + `ratifiedLog` only.
+- Optional (`includeReceipts: true`): also commits `receiptLog`.
+- Rationale: default checkpoints stay portable across differing witness/receipt sets.
+
+Determinism note:
+- For deterministic exports, pass `createdAt` explicitly or rely on `checkpoint.at`.
+- `createIdentityArtifact` no longer falls back to wall-clock time implicitly.
+
 ## Internal Modules
 
 The following remain internal and may change without notice:

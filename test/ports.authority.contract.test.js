@@ -22,6 +22,7 @@ test("authority port contract: deterministic ratified event and receipt shape", 
 
   const intentEvent = {
     kind: "intent",
+    id: "intent-1",
     type: ACTION_TYPES.CHOOSE,
     payload: {
       choiceId: "probe-signal",
@@ -40,8 +41,13 @@ test("authority port contract: deterministic ratified event and receipt shape", 
   t.ok(first.ratifiedEvent.effects.some((effect) => effect.type === "inc" && effect.key === "curiosity"));
   t.ok(first.ratifiedEvent.grants.includes("cap.askAgent"));
   t.ok(first.ratifiedEvent.grants.includes("cap.deepDossier"));
+  t.is(first.ratifiedEvent.intentId, "intent-1");
+  t.is(typeof first.ratifiedEvent.id, "string");
 
+  t.is(first.receipt.version, 1);
   t.is(first.receipt.kind, "receipt");
   t.is(first.receipt.authority, "local");
   t.is(first.receipt.at, 123);
+  t.is(first.receipt.intentId, "intent-1");
+  t.is(first.receipt.ratifiedId, first.ratifiedEvent.id);
 });

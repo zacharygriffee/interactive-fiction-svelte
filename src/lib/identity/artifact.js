@@ -12,6 +12,10 @@ function normalizeTimestamp({ createdAt, checkpointAt, clock }) {
     return createdAt;
   }
 
+  if (Number.isFinite(checkpointAt)) {
+    return checkpointAt;
+  }
+
   if (clock && typeof clock.now === "function") {
     const value = clock.now();
     if (Number.isFinite(value)) {
@@ -19,11 +23,7 @@ function normalizeTimestamp({ createdAt, checkpointAt, clock }) {
     }
   }
 
-  if (Number.isFinite(checkpointAt)) {
-    return checkpointAt;
-  }
-
-  return Date.now();
+  throw new Error("createIdentityArtifact requires createdAt, checkpoint.at, or a finite clock.now()");
 }
 
 function normalizeIdentity(proof) {
@@ -264,7 +264,7 @@ function verifySignatureIfPossible({ artifact, proof }) {
   }
 
   if (!proof) {
-    return { ok: true };
+    return { ok: true, warning: "signature-unverified-no-proof" };
   }
 
   if (typeof proof.getPublicIdentity === "function") {
@@ -291,24 +291,61 @@ function verifySignatureIfPossible({ artifact, proof }) {
   }
 
   if (typeof proof.sign === "function") {
-    const expected = normalizeSignature(proof.sign(payload));
-    if (!expected) {
-      return { ok: false, reason: "signature-verify-error" };
-    }
-
-    const matches = expected.sig === artifact.signature.sig && expected.alg === artifact.signature.alg;
-    return matches
-      ? { ok: true }
-      : { ok: false, reason: "signature-mismatch" };
+    return { ok: true, warning: "signature-unverified-no-verify" };
   }
 
-  return { ok: true };
+  return { ok: true, warning: "signature-unverified-proof-unsupported" };
 }
 
-export function verifyIdentityArtifact({ artifact, proof } = {}) {
+function verifyStrictSignature({ artifact, proof }) {
+  if (!artifact.signature) {
+    return { ok: false, reason: "strict-signature-required" };
+  }
+
+  if (!proof) {
+    return { ok: false, reason: "strict-proof-required" };
+  }
+
+  if (typeof proof.verify !== "function") {
+    return { ok: false, reason: "strict-proof-verify-required" };
+  }
+
+  if (typeof proof.getPublicIdentity !== "function") {
+    return { ok: false, reason: "strict-proof-identity-required" };
+  }
+
+  const proofIdentity = proof.getPublicIdentity();
+  if (!isRecord(proofIdentity) || !sameIdentity(artifact.identity, proofIdentity)) {
+    return { ok: false, reason: "proof-identity-mismatch" };
+  }
+
+  const payload = getSignaturePayload({
+    identity: artifact.identity,
+    checkpoint: artifact.checkpoint
+  });
+
+  try {
+    const ok = proof.verify(payload, artifact.signature, artifact.identity);
+    return ok
+      ? { ok: true }
+      : { ok: false, reason: "signature-mismatch" };
+  } catch (_error) {
+    return { ok: false, reason: "signature-verify-error" };
+  }
+}
+
+export function verifyIdentityArtifact({ artifact, proof, mode = "structural" } = {}) {
+  if (mode !== "structural" && mode !== "strict") {
+    return { ok: false, reason: "unknown-verify-mode" };
+  }
+
   const structure = verifyStructure(artifact);
   if (!structure.ok) {
     return structure;
+  }
+
+  if (mode === "strict") {
+    return verifyStrictSignature({ artifact, proof });
   }
 
   return verifySignatureIfPossible({ artifact, proof });

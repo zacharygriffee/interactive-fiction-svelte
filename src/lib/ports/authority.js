@@ -1,10 +1,11 @@
 /**
  * @typedef {Object} Receipt
+ * @property {1} version
  * @property {"receipt"} kind
  * @property {string} authority
  * @property {number} at
- * @property {string=} intentId
- * @property {string=} ratifiedId
+ * @property {string} intentId
+ * @property {string} ratifiedId
  * @property {string=} ref
  * @property {string=} sig
  * @property {object=} meta

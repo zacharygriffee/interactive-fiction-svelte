@@ -1,28 +1,16 @@
+import { createHash } from "node:crypto";
 import { canonicalizeValue } from "./canonical.js";
 
-export const CHECKPOINT_HASH_ALG = "fnv1a-32";
+export const CHECKPOINT_HASH_ALG = "sha256";
+const SHA256_ZERO_HASH = "0".repeat(64);
 
-function toBytes(input) {
-  if (input instanceof Uint8Array) {
-    return input;
-  }
-  return new TextEncoder().encode(String(input));
-}
-
-function fnv1a(input) {
-  const bytes = toBytes(input);
-  let hash = 2166136261;
-
-  for (let index = 0; index < bytes.length; index += 1) {
-    hash ^= bytes[index];
-    hash = Math.imul(hash, 16777619) >>> 0;
-  }
-
-  return hash.toString(16).padStart(8, "0");
+function hashSha256(input) {
+  const value = input instanceof Uint8Array ? input : new TextEncoder().encode(String(input));
+  return createHash("sha256").update(value).digest("hex");
 }
 
 export function hashCheckpointValue(value) {
-  return fnv1a(canonicalizeValue(value));
+  return hashSha256(canonicalizeValue(value));
 }
 
 function withFallbackId(prefix, event, index) {
@@ -32,15 +20,36 @@ function withFallbackId(prefix, event, index) {
   return `${prefix}-${index + 1}`;
 }
 
-function toCheckpointRecord({ index, prevHash, intentEvent, ratifiedEvent, receipt }) {
-  const canonicalPayload = canonicalizeValue({
+function toCommitmentPayload({ index, intentEvent, ratifiedEvent, receipt, includeReceipts }) {
+  // Commitment policy:
+  // - default: commit to intent + ratified events only
+  // - optional: include receipts when includeReceipts=true
+  const payload = {
     index,
     intentEvent,
-    ratifiedEvent,
-    receipt
-  });
+    ratifiedEvent
+  };
 
-  const hash = fnv1a(`${prevHash}|${canonicalPayload}`);
+  if (includeReceipts) {
+    payload.receipt = receipt;
+  }
+
+  return payload;
+}
+
+function toCheckpointRecord({
+  index,
+  prevHash,
+  intentEvent,
+  ratifiedEvent,
+  receipt,
+  includeReceipts
+}) {
+  const canonicalPayload = canonicalizeValue(
+    toCommitmentPayload({ index, intentEvent, ratifiedEvent, receipt, includeReceipts })
+  );
+
+  const hash = hashSha256(`${prevHash}|${canonicalPayload}`);
 
   return {
     index,
@@ -53,7 +62,13 @@ function toCheckpointRecord({ index, prevHash, intentEvent, ratifiedEvent, recei
   };
 }
 
-export function buildCheckpointChain({ intentLog = [], ratifiedLog = [], receiptLog = [], seedHash = "00000000" } = {}) {
+export function buildCheckpointChain({
+  intentLog = [],
+  ratifiedLog = [],
+  receiptLog = [],
+  seedHash = SHA256_ZERO_HASH,
+  includeReceipts = false
+} = {}) {
   const chain = [];
   let prevHash = seedHash;
 
@@ -76,6 +91,7 @@ export function buildCheckpointChain({ intentLog = [], ratifiedLog = [], receipt
     };
 
     const receipt = receiptLog[index] ?? {
+      version: 1,
       kind: "receipt",
       authority: "unknown",
       at: ratifiedEvent.at,
@@ -88,7 +104,8 @@ export function buildCheckpointChain({ intentLog = [], ratifiedLog = [], receipt
       prevHash,
       intentEvent,
       ratifiedEvent,
-      receipt
+      receipt,
+      includeReceipts
     });
 
     chain.push(record);
@@ -98,13 +115,25 @@ export function buildCheckpointChain({ intentLog = [], ratifiedLog = [], receipt
   return chain;
 }
 
-export function computeCheckpoint({ intentLog = [], ratifiedLog = [], receiptLog = [], seedHash } = {}) {
-  const chain = buildCheckpointChain({ intentLog, ratifiedLog, receiptLog, seedHash });
+export function computeCheckpoint({
+  intentLog = [],
+  ratifiedLog = [],
+  receiptLog = [],
+  seedHash,
+  includeReceipts = false
+} = {}) {
+  const chain = buildCheckpointChain({
+    intentLog,
+    ratifiedLog,
+    receiptLog,
+    seedHash,
+    includeReceipts
+  });
   const head = chain[chain.length - 1];
 
   if (!head) {
     return {
-      hash: seedHash ?? "00000000",
+      hash: seedHash ?? SHA256_ZERO_HASH,
       alg: CHECKPOINT_HASH_ALG,
       at: 0
     };
@@ -117,12 +146,25 @@ export function computeCheckpoint({ intentLog = [], ratifiedLog = [], receiptLog
   };
 }
 
-export function buildCheckpointArtifact({ intentLog = [], ratifiedLog = [], receiptLog = [], proof, seedHash } = {}) {
-  const chain = buildCheckpointChain({ intentLog, ratifiedLog, receiptLog, seedHash });
+export function buildCheckpointArtifact({
+  intentLog = [],
+  ratifiedLog = [],
+  receiptLog = [],
+  proof,
+  seedHash,
+  includeReceipts = false
+} = {}) {
+  const chain = buildCheckpointChain({
+    intentLog,
+    ratifiedLog,
+    receiptLog,
+    seedHash,
+    includeReceipts
+  });
   const head = chain[chain.length - 1] ?? {
     index: -1,
-    prevHash: seedHash ?? "00000000",
-    hash: seedHash ?? "00000000",
+    prevHash: seedHash ?? SHA256_ZERO_HASH,
+    hash: seedHash ?? SHA256_ZERO_HASH,
     alg: CHECKPOINT_HASH_ALG,
     at: 0
   };

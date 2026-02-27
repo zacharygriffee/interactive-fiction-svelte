@@ -51,6 +51,7 @@ function cloneRatifiedLog(ratifiedLog) {
 
 function cloneReceiptLog(receiptLog) {
   return receiptLog.map((receipt) => ({
+    version: receipt.version,
     kind: receipt.kind,
     authority: receipt.authority,
     at: receipt.at,
@@ -86,6 +87,7 @@ function cloneRatifiedEvent(event) {
 
 function cloneReceiptEvent(receipt) {
   return {
+    version: receipt.version,
     kind: receipt.kind,
     authority: receipt.authority,
     at: receipt.at,
@@ -183,16 +185,19 @@ function isValidReceiptEvent(receipt) {
   if (!isRecord(receipt) || receipt.kind !== "receipt") {
     return false;
   }
+  if (receipt.version !== 1) {
+    return false;
+  }
   if (typeof receipt.authority !== "string" || receipt.authority.length === 0) {
     return false;
   }
   if (typeof receipt.at !== "number") {
     return false;
   }
-  if (receipt.intentId !== undefined && typeof receipt.intentId !== "string") {
+  if (typeof receipt.intentId !== "string" || receipt.intentId.length === 0) {
     return false;
   }
-  if (receipt.ratifiedId !== undefined && typeof receipt.ratifiedId !== "string") {
+  if (typeof receipt.ratifiedId !== "string" || receipt.ratifiedId.length === 0) {
     return false;
   }
   if (receipt.ref !== undefined && typeof receipt.ref !== "string") {
@@ -537,14 +542,16 @@ export class LocalDriver extends StoryDriver {
   }
 
   _normalizeReceipt(receipt, { intentEvent, ratifiedEvent }) {
+    const hasProvidedReceipt = isRecord(receipt);
     const normalized = {
+      version: hasProvidedReceipt ? receipt.version : 1,
       kind: "receipt",
       authority: typeof receipt?.authority === "string" && receipt.authority.length > 0
         ? receipt.authority
         : "unknown",
       at: Number.isFinite(receipt?.at) ? receipt.at : ratifiedEvent.at,
-      intentId: intentEvent?.id,
-      ratifiedId: ratifiedEvent?.id
+      intentId: hasProvidedReceipt ? receipt.intentId : intentEvent?.id,
+      ratifiedId: hasProvidedReceipt ? receipt.ratifiedId : ratifiedEvent?.id
     };
 
     if (typeof receipt?.ref === "string") {
@@ -555,6 +562,10 @@ export class LocalDriver extends StoryDriver {
     }
     if (isRecord(receipt?.meta)) {
       normalized.meta = { ...receipt.meta };
+    }
+
+    if (!isValidReceiptEvent(normalized)) {
+      throw new Error("Invalid receipt from authority: version, intentId, and ratifiedId are required");
     }
 
     return normalized;

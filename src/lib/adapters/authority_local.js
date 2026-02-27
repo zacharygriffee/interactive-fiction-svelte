@@ -20,9 +20,14 @@ export class LocalAuthorityAdapter {
       : cloneEffects(intentEvent?.payload?.effects ?? []);
 
     const grants = Array.isArray(decision?.grants) ? [...decision.grants] : [];
+    const nextRatifiedId = `ratified-${(state?.ratifiedLog?.length ?? 0) + 1}`;
+    const resolvedIntentId = typeof intentEvent?.id === "string" && intentEvent.id.length > 0
+      ? intentEvent.id
+      : `intent-${(state?.intentLog?.length ?? 0) + 1}`;
 
     const ratifiedEvent = createRatifiedEvent({
-      intentId: intentEvent?.id,
+      id: nextRatifiedId,
+      intentId: resolvedIntentId,
       effects,
       grants,
       at: this._clock.now(),
@@ -30,11 +35,12 @@ export class LocalAuthorityAdapter {
     });
 
     const receipt = {
+      version: 1,
       kind: "receipt",
       authority: this._authorityName,
       at: Number.isFinite(intentEvent?.at) ? intentEvent.at : ratifiedEvent.at,
-      intentId: intentEvent?.id,
-      ratifiedId: ratifiedEvent?.id
+      intentId: resolvedIntentId,
+      ratifiedId: nextRatifiedId
     };
 
     return {

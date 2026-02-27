@@ -36,6 +36,7 @@ test("replay: carries receipt log with intent/ratified linkage", (t) => {
   ];
   const receiptLog = [
     {
+      version: 1,
       kind: "receipt",
       authority: "local",
       at: 1,
@@ -47,6 +48,42 @@ test("replay: carries receipt log with intent/ratified linkage", (t) => {
   const result = replay({ graph, intentLog, ratifiedLog, receiptLog });
 
   t.is(result.receiptLog.length, 1);
+  t.is(result.receiptLog[0].version, 1);
   t.is(result.receiptLog[0].intentId, "intent-1");
   t.is(result.receiptLog[0].ratifiedId, "ratified-1");
+});
+
+test("replay: throws when receipt linkage/version is invalid", (t) => {
+  const graph = createStoryGraph();
+  const intentLog = [
+    {
+      kind: "intent",
+      id: "intent-1",
+      type: "CHOOSE",
+      payload: {},
+      at: 1
+    }
+  ];
+  const ratifiedLog = [
+    {
+      kind: "ratified",
+      id: "ratified-1",
+      intentId: "intent-1",
+      effects: [],
+      grants: [],
+      at: 1
+    }
+  ];
+  const receiptLog = [
+    {
+      kind: "receipt",
+      authority: "local",
+      at: 1,
+      intentId: "intent-1"
+    }
+  ];
+
+  t.exception(() => {
+    replay({ graph, intentLog, ratifiedLog, receiptLog });
+  }, /Invalid receiptLog entry/);
 });

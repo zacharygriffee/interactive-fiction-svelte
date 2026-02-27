@@ -19,6 +19,7 @@ function cloneRatifiedLog(ratifiedLog) {
 
 function cloneReceiptLog(receiptLog) {
   return receiptLog.map((receipt) => ({
+    version: receipt.version,
     kind: receipt.kind,
     authority: receipt.authority,
     at: receipt.at,
@@ -28,6 +29,37 @@ function cloneReceiptLog(receiptLog) {
     sig: receipt.sig,
     meta: receipt.meta && typeof receipt.meta === "object" ? { ...receipt.meta } : undefined
   }));
+}
+
+function isValidReceipt(receipt) {
+  if (!receipt || typeof receipt !== "object" || Array.isArray(receipt)) {
+    return false;
+  }
+  if (receipt.version !== 1 || receipt.kind !== "receipt") {
+    return false;
+  }
+  if (typeof receipt.authority !== "string" || receipt.authority.length === 0) {
+    return false;
+  }
+  if (!Number.isFinite(receipt.at)) {
+    return false;
+  }
+  if (typeof receipt.intentId !== "string" || receipt.intentId.length === 0) {
+    return false;
+  }
+  if (typeof receipt.ratifiedId !== "string" || receipt.ratifiedId.length === 0) {
+    return false;
+  }
+  if (receipt.ref !== undefined && typeof receipt.ref !== "string") {
+    return false;
+  }
+  if (receipt.sig !== undefined && typeof receipt.sig !== "string") {
+    return false;
+  }
+  if (receipt.meta !== undefined && (typeof receipt.meta !== "object" || Array.isArray(receipt.meta) || receipt.meta === null)) {
+    return false;
+  }
+  return true;
 }
 
 function createBaseState(graph) {
@@ -143,15 +175,24 @@ export function replay({ graph, initialState, intentLog = [], ratifiedLog = [], 
 
     const receipt = receiptLog[index];
     if (receipt) {
-      base.receiptLog.push({
+      const resolvedReceipt = {
+        version: receipt.version,
         kind: "receipt",
         authority: receipt.authority,
         at: receipt.at,
-        intentId: receipt.intentId ?? (intentEvent.id ?? `intent-${index + 1}`),
-        ratifiedId: receipt.ratifiedId ?? (ratifiedEvent.id ?? `ratified-${index + 1}`),
+        intentId: receipt.intentId,
+        ratifiedId: receipt.ratifiedId,
         ref: receipt.ref,
         sig: receipt.sig,
         meta: receipt.meta && typeof receipt.meta === "object" ? { ...receipt.meta } : undefined
+      };
+
+      if (!isValidReceipt(resolvedReceipt)) {
+        throw new Error(`Invalid receiptLog entry at index ${index}`);
+      }
+
+      base.receiptLog.push({
+        ...resolvedReceipt
       });
     }
 

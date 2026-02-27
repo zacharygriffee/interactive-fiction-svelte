@@ -32,6 +32,7 @@ function fixtureLogs() {
     ],
     receiptLog: [
       {
+        version: 1,
         kind: "receipt",
         authority: "local",
         at: 10,
@@ -88,5 +89,26 @@ test("checkpoint: computeCheckpoint returns stable hash/alg/at", (t) => {
   t.alike(checkpoint, checkpointAgain);
   t.is(checkpoint.alg, CHECKPOINT_HASH_ALG);
   t.is(typeof checkpoint.hash, "string");
+  t.is(checkpoint.at, 11);
+});
+
+test("checkpoint: golden vector excludes receipts by default", (t) => {
+  const logs = fixtureLogs();
+  const checkpoint = computeCheckpoint(logs);
+
+  t.is(checkpoint.hash, "b0290dd85ffb9f176f39e5cca854d4adb84d72990b6cdcdb1fadf9a2d098a17c");
+  t.is(checkpoint.alg, "sha256");
+  t.is(checkpoint.at, 11);
+});
+
+test("checkpoint: golden vector includes receipts when explicitly requested", (t) => {
+  const logs = fixtureLogs();
+  const checkpoint = computeCheckpoint({
+    ...logs,
+    includeReceipts: true
+  });
+
+  t.is(checkpoint.hash, "18ff28e5b6c7b80413fe0cd966eb6a52e486d616f77161b302fc3eaad12782e4");
+  t.is(checkpoint.alg, "sha256");
   t.is(checkpoint.at, 11);
 });

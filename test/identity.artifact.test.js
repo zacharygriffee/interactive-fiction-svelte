@@ -31,6 +31,7 @@ function fixtureLogs() {
     ],
     receiptLog: [
       {
+        version: 1,
         kind: "receipt",
         authority: "local",
         at: 11,
@@ -75,8 +76,57 @@ test("identity artifact: deterministic signature with dummy proof", (t) => {
   const second = createIdentityArtifact({ proof, checkpoint, createdAt: 700 });
 
   t.alike(first.signature, second.signature);
-  const verification = verifyIdentityArtifact({ artifact: first, proof });
+  const verification = verifyIdentityArtifact({ artifact: first, proof, mode: "strict" });
   t.alike(verification, { ok: true });
+});
+
+test("identity artifact: strict mode fails without proof", (t) => {
+  const proof = new DummyProofAdapter({ seed: "seed-strict-1", pubkey: "agent-strict-1", alg: "dummy-fnv1a" });
+  const artifact = createIdentityArtifact({
+    proof,
+    checkpoint: {
+      hash: "abc12300",
+      alg: "fnv1a-32",
+      at: 88
+    },
+    createdAt: 88
+  });
+
+  const verification = verifyIdentityArtifact({ artifact, mode: "strict" });
+  t.alike(verification, { ok: false, reason: "strict-proof-required" });
+});
+
+test("identity artifact: strict mode fails without signature", (t) => {
+  const proof = new DummyProofAdapter({ seed: "seed-strict-2", pubkey: "agent-strict-2", alg: "dummy-fnv1a" });
+  const artifact = {
+    version: 1,
+    createdAt: 12,
+    identity: proof.getPublicIdentity(),
+    checkpoint: {
+      hash: "abc12399",
+      alg: "fnv1a-32",
+      at: 12
+    }
+  };
+
+  const verification = verifyIdentityArtifact({ artifact, proof, mode: "strict" });
+  t.alike(verification, { ok: false, reason: "strict-signature-required" });
+});
+
+test("identity artifact: structural mode is permissive without proof", (t) => {
+  const proof = new DummyProofAdapter({ seed: "seed-struct-1", pubkey: "agent-struct-1", alg: "dummy-fnv1a" });
+  const artifact = createIdentityArtifact({
+    proof,
+    checkpoint: {
+      hash: "ff00ee11",
+      alg: "fnv1a-32",
+      at: 91
+    },
+    createdAt: 91
+  });
+
+  const verification = verifyIdentityArtifact({ artifact, mode: "structural" });
+  t.alike(verification, { ok: true, warning: "signature-unverified-no-proof" });
 });
 
 test("identity artifact: privacy default omits raw receipt logs", (t) => {
@@ -139,4 +189,28 @@ test("identity artifact: checkpoint binding matches computeCheckpoint", (t) => {
   t.is(artifact.checkpoint.hash, checkpoint.hash);
   t.is(artifact.checkpoint.alg, checkpoint.alg);
   t.is(artifact.checkpoint.at, checkpoint.at);
+});
+
+test("identity artifact: createdAt defaults to checkpoint.at deterministically", (t) => {
+  const proof = new DummyProofAdapter({ seed: "seed-created-at", pubkey: "agent-created-at", alg: "dummy-fnv1a" });
+  const checkpoint = {
+    hash: "cc11dd22",
+    alg: "fnv1a-32",
+    at: 333
+  };
+
+  const first = createIdentityArtifact({
+    proof,
+    checkpoint,
+    clock: { now: () => 999 }
+  });
+  const second = createIdentityArtifact({
+    proof,
+    checkpoint,
+    clock: { now: () => 111 }
+  });
+
+  t.is(first.createdAt, 333);
+  t.is(second.createdAt, 333);
+  t.is(encodeIdentityArtifact(first), encodeIdentityArtifact(second));
 });
