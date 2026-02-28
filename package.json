@@ -1,10 +1,12 @@
 {
   "name": "interactive-fiction-svelte",
+  "version": "0.6.0",
   "type": "module",
   "main": "index.html",
   "exports": {
     ".": "./src/lib/index.js",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./examples": "./examples/index.js"
   },
   "license": "MIT",
   "scripts": {
