@@ -224,11 +224,115 @@ export const requires = {
       value
     };
   },
+  gte(key, value) {
+    assertString(key, "requires.gte(key, value): key");
+    if (!Number.isFinite(value)) {
+      throw new Error("requires.gte(key, value): value must be a finite number");
+    }
+    return {
+      type: "flagGte",
+      key,
+      value
+    };
+  },
+  lte(key, value) {
+    assertString(key, "requires.lte(key, value): key");
+    if (!Number.isFinite(value)) {
+      throw new Error("requires.lte(key, value): value must be a finite number");
+    }
+    return {
+      type: "flagLte",
+      key,
+      value
+    };
+  },
   cap(name) {
     assertString(name, "requires.cap(name)");
     return {
       type: "capability",
       name
+    };
+  },
+  knowledge(key) {
+    assertString(key, "requires.knowledge(key)");
+    return {
+      type: "knowledge",
+      key
+    };
+  },
+  item(key) {
+    assertString(key, "requires.item(key)");
+    return {
+      type: "inventoryHas",
+      key
+    };
+  },
+  itemCount(key, count) {
+    assertString(key, "requires.itemCount(key, count): key");
+    if (!Number.isFinite(count)) {
+      throw new Error("requires.itemCount(key, count): count must be a finite number");
+    }
+    return {
+      type: "inventoryGte",
+      key,
+      value: count
+    };
+  },
+  relationship(name, value) {
+    assertString(name, "requires.relationship(name, value): name");
+    if (!Number.isFinite(value)) {
+      throw new Error("requires.relationship(name, value): value must be a finite number");
+    }
+    return {
+      type: "relationshipGte",
+      name,
+      value
+    };
+  },
+  timerAtLeast(key, value) {
+    assertString(key, "requires.timerAtLeast(key, value): key");
+    if (!Number.isFinite(value)) {
+      throw new Error("requires.timerAtLeast(key, value): value must be a finite number");
+    }
+    return {
+      type: "timerGte",
+      key,
+      value
+    };
+  },
+  timerAtMost(key, value) {
+    assertString(key, "requires.timerAtMost(key, value): key");
+    if (!Number.isFinite(value)) {
+      throw new Error("requires.timerAtMost(key, value): value must be a finite number");
+    }
+    return {
+      type: "timerLte",
+      key,
+      value
+    };
+  },
+  scene(scene, key, value) {
+    assertString(scene, "requires.scene(scene, key, value): scene");
+    assertString(key, "requires.scene(scene, key, value): key");
+    return {
+      type: "sceneFlagEquals",
+      scene,
+      key,
+      value
+    };
+  },
+  visitedNode(nodeId) {
+    assertString(nodeId, "requires.visitedNode(nodeId)");
+    return {
+      type: "visitedNode",
+      nodeId
+    };
+  },
+  chose(choiceId) {
+    assertString(choiceId, "requires.chose(choiceId)");
+    return {
+      type: "choseChoice",
+      choiceId
     };
   }
 };
@@ -260,6 +364,85 @@ export const fx = {
       type: "pushLog",
       level,
       text
+    };
+  },
+  learn(key) {
+    assertString(key, "fx.learn(key)");
+    return {
+      type: "addKnowledge",
+      key
+    };
+  },
+  forget(key) {
+    assertString(key, "fx.forget(key)");
+    return {
+      type: "removeKnowledge",
+      key
+    };
+  },
+  addItem(key, amount = 1) {
+    assertString(key, "fx.addItem(key, amount): key");
+    if (!Number.isFinite(amount)) {
+      throw new Error("fx.addItem(key, amount): amount must be a finite number");
+    }
+    return {
+      type: "addItem",
+      key,
+      amount
+    };
+  },
+  removeItem(key, amount = 1) {
+    assertString(key, "fx.removeItem(key, amount): key");
+    if (!Number.isFinite(amount)) {
+      throw new Error("fx.removeItem(key, amount): amount must be a finite number");
+    }
+    return {
+      type: "removeItem",
+      key,
+      amount
+    };
+  },
+  adjustRelationship(name, by) {
+    assertString(name, "fx.adjustRelationship(name, by): name");
+    if (!Number.isFinite(by)) {
+      throw new Error("fx.adjustRelationship(name, by): by must be a finite number");
+    }
+    return {
+      type: "adjustRelationship",
+      name,
+      by
+    };
+  },
+  setTimer(key, value) {
+    assertString(key, "fx.setTimer(key, value): key");
+    if (!Number.isFinite(value)) {
+      throw new Error("fx.setTimer(key, value): value must be a finite number");
+    }
+    return {
+      type: "setTimer",
+      key,
+      value
+    };
+  },
+  advanceTimer(key, by = 1) {
+    assertString(key, "fx.advanceTimer(key, by): key");
+    if (!Number.isFinite(by)) {
+      throw new Error("fx.advanceTimer(key, by): by must be a finite number");
+    }
+    return {
+      type: "advanceTimer",
+      key,
+      by
+    };
+  },
+  setSceneFlag(scene, key, value) {
+    assertString(scene, "fx.setSceneFlag(scene, key, value): scene");
+    assertString(key, "fx.setSceneFlag(scene, key, value): key");
+    return {
+      type: "setSceneFlag",
+      scene,
+      key,
+      value
     };
   }
 };

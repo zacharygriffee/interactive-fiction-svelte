@@ -33,6 +33,10 @@ export const terminalDossierAuthorGraph = {
             requires.cap("cap.askAgent")
           ]
         }),
+        storylet("operator-recall", "A cached operator hash resolves into an older mission signature you were not meant to remember.", {
+          priority: 5,
+          requires: [requires.knowledge("operatorHash")]
+        }),
         storylet("deep-dossier-window", "Deep dossier blocks unfold into personnel links and suppressed timestamps.", {
           priority: 4,
           requires: [requires.cap("cap.deepDossier")]
@@ -67,6 +71,14 @@ export const terminalDossierAuthorGraph = {
         choice("probe-banner", "Probe the watcher banner", undefined, {
           effects: [fx.pushLog("warn", "ACTION: watcher banner returned static")]
         }),
+        choice("cache-operator-sig", "Cache operator signature", undefined, {
+          effects: [
+            fx.learn("operatorHash"),
+            fx.addItem("traceKey", 1),
+            fx.setTimer("evidenceWindow", 2),
+            fx.pushLog("info", "TRACE: operator signature cached")
+          ]
+        }),
         choice("to-mirror-feed", "Route video to mirror feed", "mirror_feed", {
           requires: [requires.cap("cap.askAgent")]
         }),
@@ -84,6 +96,12 @@ export const terminalDossierAuthorGraph = {
           effects: [
             fx.set("corridorProbed", true),
             fx.pushLog("info", "TRACE: corridor camera loop sampled")
+          ]
+        }),
+        choice("mark-service-door", "Mark the service door for later exit", undefined, {
+          effects: [
+            fx.setSceneFlag("witness_chamber", "serviceDoorOpen", true),
+            fx.pushLog("info", "TRACE: witness chamber backdoor marked")
           ]
         }),
         choice("corridor-to-relay", "Drop into relay hub", "relay_hub"),
@@ -106,6 +124,12 @@ export const terminalDossierAuthorGraph = {
           effects: [
             fx.set("manifestRead", true),
             fx.pushLog("info", "ACTION: manifest snapshot captured")
+          ]
+        }),
+        choice("extract-trace-key", "Extract trace key shard", undefined, {
+          effects: [
+            fx.addItem("traceKey", 1),
+            fx.pushLog("info", "ACTION: trace key shard extracted")
           ]
         }),
         choice("probe-index-lattice", "Probe archive index lattice", undefined, {
@@ -173,6 +197,10 @@ export const terminalDossierAuthorGraph = {
             requires.cap("cap.askAgent"),
             requires.flag("relayAligned")
           ]
+        }),
+        storylet("cached-signature-loop", "The memory loop locks onto the cached operator signature and starts answering in your cadence.", {
+          priority: 4,
+          requires: [requires.knowledge("operatorHash")]
         })
       ]),
       choices([
@@ -180,6 +208,14 @@ export const terminalDossierAuthorGraph = {
           effects: [
             fx.set("memoryProbe", true),
             fx.pushLog("info", "TRACE: memory loop probe complete")
+          ]
+        }),
+        choice("stabilize-agent-link", "Stabilize the agent link", undefined, {
+          effects: [
+            fx.adjustRelationship("liaison", 2),
+            fx.setTimer("liaisonWindow", 2),
+            fx.learn("agentLink"),
+            fx.pushLog("info", "ACTION: agent link stabilized")
           ]
         }),
         choice("memory-to-witness", "Go to witness chamber", "witness_chamber"),
@@ -241,6 +277,13 @@ export const terminalDossierAuthorGraph = {
           requires: [
             requires.flag("redactionLifted"),
             requires.flag("relayAligned")
+          ]
+        }),
+        storylet("service-backdoor", "The marked service door slides open a fraction, confirming a clean retreat vector.", {
+          priority: 5,
+          requires: [
+            requires.visitedNode("service_corridor"),
+            requires.scene("witness_chamber", "serviceDoorOpen", true)
           ]
         }),
         storylet("crosscheck-dossier", "Deep dossier notes identify the witness as a recycled operator profile.", {
@@ -305,6 +348,13 @@ export const terminalDossierAuthorGraph = {
             requires.cap("cap.deepDossier"),
             requires.flag("witnessSpoken")
           ]
+        }),
+        storylet("sealed-trace-note", "A sealed trace note opens only if you carried a trace key and chose to cache the signature yourself.", {
+          priority: 6,
+          requires: [
+            requires.chose("cache-operator-sig"),
+            requires.itemCount("traceKey", 1)
+          ]
         })
       ]),
       choices([
@@ -340,6 +390,13 @@ export const terminalDossierAuthorGraph = {
           requires: [
             requires.cap("cap.askAgent"),
             requires.flag("relayAligned")
+          ]
+        }),
+        storylet("liaison-trust", "The liaison channel stops sounding synthetic once the stabilized link recognizes your timing.", {
+          priority: 4,
+          requires: [
+            requires.relationship("liaison", 2),
+            requires.timerAtLeast("liaisonWindow", 2)
           ]
         })
       ]),

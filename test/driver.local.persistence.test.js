@@ -44,6 +44,9 @@ test("local persistence: reload restores state", async (t) => {
 
   await first.init();
   await first.dispatch({ type: ACTION_TYPES.CHOOSE, choiceId: "to-grove" });
+  await first.dispatch({ type: ACTION_TYPES.GO_BACK });
+  await first.dispatch({ type: ACTION_TYPES.CHOOSE, choiceId: "collect-chip" });
+  await first.dispatch({ type: ACTION_TYPES.CHOOSE, choiceId: "decode-pattern" });
 
   const second = new LocalDriver({
     graph,
@@ -54,10 +57,16 @@ test("local persistence: reload restores state", async (t) => {
   await second.init();
   const snapshot = second.getSnapshot();
 
-  t.is(snapshot.node.id, "grove");
+  t.is(snapshot.node.id, "start");
   t.is(snapshot.flags.steps, 1);
-  t.is(snapshot.history.length, 2);
-  t.is(snapshot.history[1].viaChoiceId, "to-grove");
+  t.ok(snapshot.knowledge.nexusPattern);
+  t.is(snapshot.inventory.signalChip, 1);
+  t.is(snapshot.relationships.zephyr, 2);
+  t.is(snapshot.timers.window, 2);
+  t.alike(snapshot.sceneState.archive, { terminalOpen: true });
+  t.is(snapshot.history.length, 3);
+  t.is(snapshot.history[1].viaChoiceId, "collect-chip");
+  t.is(snapshot.history[2].viaChoiceId, "decode-pattern");
 });
 
 test("local persistence: missing version ignored", async (t) => {

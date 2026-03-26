@@ -1,6 +1,5 @@
 <script>
-  export let node;
-  export let visibleStorylets = [];
+  let { node, visibleStorylets = [] } = $props();
 </script>
 
 <section>

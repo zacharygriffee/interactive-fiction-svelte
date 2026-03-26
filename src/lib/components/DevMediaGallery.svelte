@@ -5,14 +5,14 @@
   const VIDEO_EXTENSIONS = new Set(["mp4", "webm", "mov", "m4v", "ogg"]);
   const AUDIO_EXTENSIONS = new Set(["mp3", "wav", "m4a", "aac", "flac", "ogg"]);
 
-  let loading = true;
-  let errorText = "";
-  let files = [];
+  let loading = $state(true);
+  let errorText = $state("");
+  let files = $state([]);
 
-  $: images = files.filter((file) => IMAGE_EXTENSIONS.has(extensionOf(file)));
-  $: videos = files.filter((file) => VIDEO_EXTENSIONS.has(extensionOf(file)) && !IMAGE_EXTENSIONS.has(extensionOf(file)));
-  $: audio = files.filter((file) => AUDIO_EXTENSIONS.has(extensionOf(file)) && !VIDEO_EXTENSIONS.has(extensionOf(file)));
-  $: other = files.filter((file) => !images.includes(file) && !videos.includes(file) && !audio.includes(file));
+  const images = $derived(files.filter((file) => IMAGE_EXTENSIONS.has(extensionOf(file))));
+  const videos = $derived(files.filter((file) => VIDEO_EXTENSIONS.has(extensionOf(file)) && !IMAGE_EXTENSIONS.has(extensionOf(file))));
+  const audio = $derived(files.filter((file) => AUDIO_EXTENSIONS.has(extensionOf(file)) && !VIDEO_EXTENSIONS.has(extensionOf(file))));
+  const other = $derived(files.filter((file) => !images.includes(file) && !videos.includes(file) && !audio.includes(file)));
 
   function extensionOf(file) {
     const index = file.lastIndexOf(".");

@@ -21,7 +21,8 @@ export default {
     svelte({
       emitCss: false,
       compilerOptions: {
-        css: "injected"
+        css: "injected",
+        runes: true
       }
     }),
     resolve({

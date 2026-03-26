@@ -90,6 +90,37 @@ export function createStoryGraph() {
           {
             id: "probe-signal",
             label: "Probe the signal"
+          },
+          {
+            id: "collect-chip",
+            label: "Collect signal chip",
+            effects: [
+              { type: "addItem", key: "signalChip", amount: 1 },
+              { type: "advanceTimer", key: "pursuit", by: 1 }
+            ]
+          },
+          {
+            id: "decode-pattern",
+            label: "Decode the pattern",
+            requires: [
+              { type: "inventoryHas", key: "signalChip" }
+            ],
+            effects: [
+              { type: "addKnowledge", key: "nexusPattern" },
+              { type: "adjustRelationship", name: "zephyr", by: 2 },
+              { type: "setTimer", key: "window", value: 2 },
+              { type: "setSceneFlag", scene: "archive", key: "terminalOpen", value: true }
+            ]
+          },
+          {
+            id: "to-archive",
+            label: "Slip into archive",
+            to: "archive",
+            requires: [
+              { type: "knowledge", key: "nexusPattern" },
+              { type: "relationshipGte", name: "zephyr", value: 2 },
+              { type: "sceneFlagEquals", scene: "archive", key: "terminalOpen", value: true }
+            ]
           }
         ]
       },
@@ -116,6 +147,18 @@ export function createStoryGraph() {
         title: "Secret",
         body: "A hidden alcove.",
         choices: []
+      },
+      archive: {
+        id: "archive",
+        title: "Archive",
+        body: "A dead room of mirrored logs.",
+        choices: [
+          {
+            id: "archive-to-start",
+            label: "Return to start",
+            to: "start"
+          }
+        ]
       }
     }
   };

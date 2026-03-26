@@ -1,6 +1,5 @@
 <script>
-  export let choices = [];
-  export let onChoose = () => {};
+  let { choices = [], onChoose = () => {} } = $props();
 </script>
 
 <section>
@@ -11,7 +10,7 @@
     <ul>
       {#each choices as choice}
         <li>
-          <button type="button" on:click={() => onChoose(choice.id)}>{choice.label}</button>
+          <button type="button" onclick={() => onChoose(choice.id)}>{choice.label}</button>
         </li>
       {/each}
     </ul>

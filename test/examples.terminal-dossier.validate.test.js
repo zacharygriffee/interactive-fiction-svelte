@@ -34,4 +34,39 @@ test("terminal dossier example: required mechanics are present", (t) => {
       (choice) => choice.to === undefined && Array.isArray(choice.effects) && choice.effects.length > 0
     )
   );
+  t.ok(
+    storylets.some((storylet) =>
+      (storylet.requires ?? []).some((condition) => condition?.type === "knowledge")
+    )
+  );
+  t.ok(
+    storylets.some((storylet) =>
+      (storylet.requires ?? []).some((condition) => condition?.type === "visitedNode")
+    )
+  );
+  t.ok(
+    storylets.some((storylet) =>
+      (storylet.requires ?? []).some((condition) => condition?.type === "choseChoice")
+    )
+  );
+  t.ok(
+    storylets.some((storylet) =>
+      (storylet.requires ?? []).some((condition) => condition?.type === "relationshipGte")
+    )
+  );
+  t.ok(
+    choices.some((choice) =>
+      (choice.effects ?? []).some((effect) => effect?.type === "addItem")
+    )
+  );
+  t.ok(
+    choices.some((choice) =>
+      (choice.effects ?? []).some((effect) => effect?.type === "setSceneFlag")
+    )
+  );
+  t.ok(
+    choices.some((choice) =>
+      (choice.effects ?? []).some((effect) => effect?.type === "adjustRelationship")
+    )
+  );
 });

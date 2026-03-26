@@ -6,8 +6,10 @@ import { createDriver } from "./lib/story/createDriver.js";
 import { validateGraph } from "./lib/story/dsl/validate.js";
 import { GraphResolverSelector } from "./lib/adapters/graph_resolver_selector.js";
 import { storyGraph as terminalDossierGraph } from "../examples/terminal-dossier/graph.js";
+import { storyGraph as shinobiDemoGraph } from "../examples/shinobi-demo/graph.js";
 
 const STORY_ID_TERMINAL_DOSSIER = "terminal-dossier";
+const STORY_ID_SHINOBI_DEMO = "shinobi-demo";
 const STORY_ID_DEFAULT = "default";
 const DEFAULT_STORAGE_KEY = "interactive-fiction-runtime-state";
 
@@ -16,7 +18,8 @@ function createRuntimeDriver({ mode = "local", graphResolver } = {}) {
     defaultGraph: defaultStoryGraph,
     storyGraphsById: {
       [STORY_ID_DEFAULT]: defaultStoryGraph,
-      [STORY_ID_TERMINAL_DOSSIER]: terminalDossierGraph
+      [STORY_ID_TERMINAL_DOSSIER]: terminalDossierGraph,
+      [STORY_ID_SHINOBI_DEMO]: shinobiDemoGraph
     }
   });
   const selectedGraph = resolvedGraphResolver.getGraph({});

@@ -1,5 +1,5 @@
 <script>
-  export let snapshot;
+  let { snapshot } = $props();
 </script>
 
 <section>

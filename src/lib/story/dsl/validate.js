@@ -104,8 +104,64 @@ function validateCondition(condition, path) {
     case CONDITION_TYPES.FLAG_EQUALS:
       assertString(condition.key, `${path}.key`, "E_CONDITION_KEY_INVALID");
       return;
+    case CONDITION_TYPES.FLAG_GTE:
+    case CONDITION_TYPES.FLAG_LTE:
+      assertString(condition.key, `${path}.key`, "E_CONDITION_KEY_INVALID");
+      if (!Number.isFinite(condition.value)) {
+        fail({
+          code: "E_CONDITION_VALUE_INVALID",
+          path: `${path}.value`,
+          message: "must be a finite number"
+        });
+      }
+      return;
     case CONDITION_TYPES.CAPABILITY:
       assertString(condition.name, `${path}.name`, "E_CONDITION_NAME_INVALID");
+      return;
+    case CONDITION_TYPES.KNOWLEDGE:
+    case CONDITION_TYPES.INVENTORY_HAS:
+      assertString(condition.key, `${path}.key`, "E_CONDITION_KEY_INVALID");
+      return;
+    case CONDITION_TYPES.INVENTORY_GTE:
+      assertString(condition.key, `${path}.key`, "E_CONDITION_KEY_INVALID");
+      if (!Number.isFinite(condition.value)) {
+        fail({
+          code: "E_CONDITION_VALUE_INVALID",
+          path: `${path}.value`,
+          message: "must be a finite number"
+        });
+      }
+      return;
+    case CONDITION_TYPES.RELATIONSHIP_GTE:
+      assertString(condition.name, `${path}.name`, "E_CONDITION_NAME_INVALID");
+      if (!Number.isFinite(condition.value)) {
+        fail({
+          code: "E_CONDITION_VALUE_INVALID",
+          path: `${path}.value`,
+          message: "must be a finite number"
+        });
+      }
+      return;
+    case CONDITION_TYPES.TIMER_GTE:
+    case CONDITION_TYPES.TIMER_LTE:
+      assertString(condition.key, `${path}.key`, "E_CONDITION_KEY_INVALID");
+      if (!Number.isFinite(condition.value)) {
+        fail({
+          code: "E_CONDITION_VALUE_INVALID",
+          path: `${path}.value`,
+          message: "must be a finite number"
+        });
+      }
+      return;
+    case CONDITION_TYPES.SCENE_FLAG_EQUALS:
+      assertString(condition.scene, `${path}.scene`, "E_CONDITION_SCENE_INVALID");
+      assertString(condition.key, `${path}.key`, "E_CONDITION_KEY_INVALID");
+      return;
+    case CONDITION_TYPES.VISITED_NODE:
+      assertString(condition.nodeId, `${path}.nodeId`, "E_CONDITION_NODE_ID_INVALID");
+      return;
+    case CONDITION_TYPES.CHOSE_CHOICE:
+      assertString(condition.choiceId, `${path}.choiceId`, "E_CONDITION_CHOICE_ID_INVALID");
       return;
     default: {
       const candidates = Object.values(CONDITION_TYPES);
@@ -143,6 +199,55 @@ function validateEffect(effect, path) {
     case EFFECT_TYPES.PUSH_LOG:
       assertString(effect.level, `${path}.level`, "E_EFFECT_LEVEL_INVALID");
       assertString(effect.text, `${path}.text`, "E_EFFECT_TEXT_INVALID");
+      return;
+    case EFFECT_TYPES.ADD_KNOWLEDGE:
+    case EFFECT_TYPES.REMOVE_KNOWLEDGE:
+      assertString(effect.key, `${path}.key`, "E_EFFECT_KEY_INVALID");
+      return;
+    case EFFECT_TYPES.ADD_ITEM:
+    case EFFECT_TYPES.REMOVE_ITEM:
+      assertString(effect.key, `${path}.key`, "E_EFFECT_KEY_INVALID");
+      if (!Number.isFinite(effect.amount)) {
+        fail({
+          code: "E_EFFECT_AMOUNT_INVALID",
+          path: `${path}.amount`,
+          message: "must be a finite number"
+        });
+      }
+      return;
+    case EFFECT_TYPES.ADJUST_RELATIONSHIP:
+      assertString(effect.name, `${path}.name`, "E_EFFECT_NAME_INVALID");
+      if (!Number.isFinite(effect.by)) {
+        fail({
+          code: "E_EFFECT_BY_INVALID",
+          path: `${path}.by`,
+          message: "must be a finite number"
+        });
+      }
+      return;
+    case EFFECT_TYPES.SET_TIMER:
+      assertString(effect.key, `${path}.key`, "E_EFFECT_KEY_INVALID");
+      if (!Number.isFinite(effect.value)) {
+        fail({
+          code: "E_EFFECT_VALUE_INVALID",
+          path: `${path}.value`,
+          message: "must be a finite number"
+        });
+      }
+      return;
+    case EFFECT_TYPES.ADVANCE_TIMER:
+      assertString(effect.key, `${path}.key`, "E_EFFECT_KEY_INVALID");
+      if (!Number.isFinite(effect.by)) {
+        fail({
+          code: "E_EFFECT_BY_INVALID",
+          path: `${path}.by`,
+          message: "must be a finite number"
+        });
+      }
+      return;
+    case EFFECT_TYPES.SET_SCENE_FLAG:
+      assertString(effect.scene, `${path}.scene`, "E_EFFECT_SCENE_INVALID");
+      assertString(effect.key, `${path}.key`, "E_EFFECT_KEY_INVALID");
       return;
     default: {
       const candidates = Object.values(EFFECT_TYPES);

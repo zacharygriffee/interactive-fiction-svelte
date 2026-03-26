@@ -7,17 +7,16 @@
   import { ACTION_TYPES } from "./lib/story/types.js";
   import { getMode, hasStorySelection, isDevMode } from "./lib/app/mode.js";
 
-  export let pear;
-  export let driver;
+  let { pear = null, driver = null } = $props();
 
-  let snapshot = null;
-  let errorText = "";
-  let mode = "play";
-  let devMode = false;
-  let storySelected = false;
+  let snapshot = $state(null);
+  let errorText = $state("");
+  let mode = $state("play");
+  let devMode = $state(false);
+  let storySelected = $state(false);
 
-  $: showLanding = devMode && !storySelected;
-  $: showRuntime = !showLanding;
+  const showLanding = $derived(!storySelected);
+  const showRuntime = $derived(!showLanding);
 
   onMount(() => {
     const runtimeSearch = typeof globalThis?.location?.search === "string" ? globalThis.location.search : "";
@@ -87,7 +86,7 @@
     {#if snapshot}
       <NodeView node={snapshot.node} visibleStorylets={snapshot.visibleStorylets} />
       <ChoiceList choices={snapshot.availableChoices} onChoose={onChoose} />
-      <button type="button" on:click={goBack}>Go Back</button>
+      <button type="button" onclick={goBack}>Go Back</button>
       {#if devMode}
         <DebugPanel snapshot={snapshot} />
       {/if}

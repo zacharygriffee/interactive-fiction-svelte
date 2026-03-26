@@ -27,6 +27,20 @@ function cloneEffectsList(effects = []) {
   return effects.map((effect) => ({ ...effect }));
 }
 
+function cloneNumericMap(map = {}) {
+  return { ...map };
+}
+
+function cloneTruthMap(map = {}) {
+  return { ...map };
+}
+
+function cloneSceneState(sceneState = {}) {
+  return Object.fromEntries(
+    Object.entries(sceneState).map(([sceneId, values]) => [sceneId, isRecord(values) ? { ...values } : {}])
+  );
+}
+
 function cloneIntentLog(intentLog) {
   return intentLog.map((event) => ({
     kind: event.kind,
@@ -118,6 +132,34 @@ function normalizeCapabilities(capabilities) {
   }
 
   return {};
+}
+
+function isFiniteNumberRecord(value) {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return Object.values(value).every((item) => Number.isFinite(item));
+}
+
+function isStrictTruthRecord(value) {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return Object.values(value).every((item) => item === true);
+}
+
+function isValidSceneState(value) {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  for (const sceneValue of Object.values(value)) {
+    if (!isRecord(sceneValue)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function storyletPriority(storylet) {
@@ -228,10 +270,23 @@ function isValidLoadedState(value, graph) {
   if (!isRecord(value.capabilities)) {
     return false;
   }
-  for (const capabilityValue of Object.values(value.capabilities)) {
-    if (capabilityValue !== true) {
-      return false;
-    }
+  if (!isStrictTruthRecord(value.capabilities)) {
+    return false;
+  }
+  if (!isStrictTruthRecord(value.knowledge ?? {})) {
+    return false;
+  }
+  if (!isFiniteNumberRecord(value.inventory ?? {})) {
+    return false;
+  }
+  if (!isFiniteNumberRecord(value.relationships ?? {})) {
+    return false;
+  }
+  if (!isFiniteNumberRecord(value.timers ?? {})) {
+    return false;
+  }
+  if (!isValidSceneState(value.sceneState ?? {})) {
+    return false;
   }
   if (!Array.isArray(value.log) || !value.log.every(isValidLogEntry)) {
     return false;
@@ -280,6 +335,11 @@ function cloneState(state) {
     history: cloneHistory(state.history),
     flags: { ...state.flags },
     capabilities: { ...state.capabilities },
+    knowledge: cloneTruthMap(state.knowledge),
+    inventory: cloneNumericMap(state.inventory),
+    relationships: cloneNumericMap(state.relationships),
+    timers: cloneNumericMap(state.timers),
+    sceneState: cloneSceneState(state.sceneState),
     log: cloneLog(state.log),
     revealedStorylets: { ...state.revealedStorylets },
     intentLog: cloneIntentLog(state.intentLog),
@@ -300,6 +360,11 @@ function createFreshState({ startNodeId, startAt, capabilities }) {
     ],
     flags: {},
     capabilities: { ...capabilities },
+    knowledge: {},
+    inventory: {},
+    relationships: {},
+    timers: {},
+    sceneState: {},
     log: [],
     revealedStorylets: {},
     intentLog: [],
@@ -847,6 +912,11 @@ export class LocalDriver extends StoryDriver {
       history: cloneHistory(this._state.history),
       flags: { ...this._state.flags },
       capabilities: { ...this._state.capabilities },
+      knowledge: cloneTruthMap(this._state.knowledge),
+      inventory: cloneNumericMap(this._state.inventory),
+      relationships: cloneNumericMap(this._state.relationships),
+      timers: cloneNumericMap(this._state.timers),
+      sceneState: cloneSceneState(this._state.sceneState),
       logTail: cloneLog(logTail),
       provisionalTail: this._provisionalTail.map((item) => ({ ...item })),
       intentLog: cloneIntentLog(this._state.intentLog),

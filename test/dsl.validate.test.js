@@ -103,3 +103,39 @@ test("dsl validate: requires and effects must be arrays", async (t) => {
     validateGraph(brokenEffects);
   }, /effects.*array/);
 });
+
+test("dsl validate: extended investigation conditions and effects validate", (t) => {
+  const graph = clone(storyGraph);
+  graph.nodesById.start.choices[0].requires = [
+    { type: "knowledge", key: "nexusPattern" },
+    { type: "inventoryGte", key: "signalChip", value: 1 },
+    { type: "relationshipGte", name: "zephyr", value: 2 },
+    { type: "timerLte", key: "pursuit", value: 3 },
+    { type: "sceneFlagEquals", scene: "archive", key: "terminalOpen", value: true },
+    { type: "visitedNode", nodeId: "start" },
+    { type: "choseChoice", choiceId: "inspect" }
+  ];
+  graph.nodesById.start.choices[0].effects = [
+    { type: "addKnowledge", key: "nexusPattern" },
+    { type: "addItem", key: "signalChip", amount: 1 },
+    { type: "adjustRelationship", name: "zephyr", by: 1 },
+    { type: "setTimer", key: "pursuit", value: 2 },
+    { type: "advanceTimer", key: "pursuit", by: 1 },
+    { type: "setSceneFlag", scene: "archive", key: "terminalOpen", value: true }
+  ];
+
+  validateGraph(graph);
+  t.pass();
+});
+
+test("dsl validate: extended conditions and effects require numeric payloads where expected", (t) => {
+  const brokenCondition = clone(storyGraph);
+  brokenCondition.nodesById.start.choices[0].requires = [{ type: "inventoryGte", key: "signalChip", value: "many" }];
+  const conditionError = captureValidationError(() => validateGraph(brokenCondition));
+  t.is(conditionError?.code, "E_CONDITION_VALUE_INVALID");
+
+  const brokenEffect = clone(storyGraph);
+  brokenEffect.nodesById.start.choices[0].effects = [{ type: "addItem", key: "signalChip", amount: "many" }];
+  const effectError = captureValidationError(() => validateGraph(brokenEffect));
+  t.is(effectError?.code, "E_EFFECT_AMOUNT_INVALID");
+});

@@ -17,6 +17,7 @@
     "prepare-dist:dev": "node scripts/prepare-dist.js dev",
     "prepare-dist:play": "node scripts/prepare-dist.js play",
     "start": "node scripts/start.js",
+    "run-if": "node scripts/if-run.js",
     "validate-graph": "node scripts/validate-graph.js",
     "validate-graph:all": "node scripts/validate-graph-all.js",
     "validate-assets": "node scripts/validate-assets.js",

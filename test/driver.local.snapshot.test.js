@@ -72,6 +72,11 @@ test("local snapshot: mutating returned snapshot does not mutate driver state", 
   const first = driver.getSnapshot();
   first.flags.hacked = true;
   first.capabilities.injected = true;
+  first.knowledge.injected = true;
+  first.inventory.fake = 9;
+  first.relationships.fake = 9;
+  first.timers.fake = 9;
+  first.sceneState.injected = { open: true };
   first.history.push({ nodeId: "lab", viaChoiceId: "x", at: 9999 });
   first.availableChoices.pop();
   first.logTail.push({ level: "warn", text: "mutated", at: 1 });
@@ -80,7 +85,44 @@ test("local snapshot: mutating returned snapshot does not mutate driver state", 
 
   t.absent(second.flags.hacked);
   t.absent(second.capabilities.injected);
+  t.absent(second.knowledge.injected);
+  t.absent(second.inventory.fake);
+  t.absent(second.relationships.fake);
+  t.absent(second.timers.fake);
+  t.absent(second.sceneState.injected);
   t.is(second.history.length, 2);
   t.ok(second.availableChoices.length >= 1);
   t.is(second.logTail.length, 0);
+});
+
+test("local snapshot: extended state domains drive investigation branching", async (t) => {
+  const driver = new LocalDriver({
+    graph: createStoryGraph(),
+    storage: new MemoryStorage(),
+    clock: createClock({ start: 300, step: 10 })
+  });
+
+  await driver.init();
+
+  let choiceIds = driver.getSnapshot().availableChoices.map((choice) => choice.id);
+  t.absent(choiceIds.includes("decode-pattern"));
+  t.absent(choiceIds.includes("to-archive"));
+
+  await driver.dispatch({ type: ACTION_TYPES.CHOOSE, choiceId: "collect-chip" });
+  choiceIds = driver.getSnapshot().availableChoices.map((choice) => choice.id);
+  t.ok(choiceIds.includes("decode-pattern"));
+
+  await driver.dispatch({ type: ACTION_TYPES.CHOOSE, choiceId: "decode-pattern" });
+  const snapshot = driver.getSnapshot();
+
+  t.ok(snapshot.knowledge.nexusPattern);
+  t.is(snapshot.inventory.signalChip, 1);
+  t.is(snapshot.relationships.zephyr, 2);
+  t.is(snapshot.timers.window, 2);
+  t.is(snapshot.timers.pursuit, 1);
+  t.alike(snapshot.sceneState.archive, { terminalOpen: true });
+  t.ok(snapshot.availableChoices.some((choice) => choice.id === "to-archive"));
+
+  await driver.dispatch({ type: ACTION_TYPES.CHOOSE, choiceId: "to-archive" });
+  t.is(driver.getSnapshot().node.id, "archive");
 });

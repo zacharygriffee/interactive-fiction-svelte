@@ -31,6 +31,12 @@ function cloneReceiptLog(receiptLog) {
   }));
 }
 
+function cloneSceneState(sceneState = {}) {
+  return Object.fromEntries(
+    Object.entries(sceneState).map(([sceneId, value]) => [sceneId, value && typeof value === "object" ? { ...value } : {}])
+  );
+}
+
 function isValidReceipt(receipt) {
   if (!receipt || typeof receipt !== "object" || Array.isArray(receipt)) {
     return false;
@@ -75,6 +81,11 @@ function createBaseState(graph) {
     ],
     flags: {},
     capabilities: {},
+    knowledge: {},
+    inventory: {},
+    relationships: {},
+    timers: {},
+    sceneState: {},
     log: [],
     revealedStorylets: {},
     intentLog: [],
@@ -130,6 +141,11 @@ export function replay({ graph, initialState, intentLog = [], ratifiedLog = [], 
         history: cloneHistory(initialState.history),
         flags: { ...initialState.flags },
         capabilities: { ...initialState.capabilities },
+        knowledge: { ...(initialState.knowledge ?? {}) },
+        inventory: { ...(initialState.inventory ?? {}) },
+        relationships: { ...(initialState.relationships ?? {}) },
+        timers: { ...(initialState.timers ?? {}) },
+        sceneState: cloneSceneState(initialState.sceneState ?? {}),
         log: initialState.log.map((entry) => ({ ...entry })),
         revealedStorylets: { ...initialState.revealedStorylets },
         intentLog: [],
@@ -205,6 +221,11 @@ export function replay({ graph, initialState, intentLog = [], ratifiedLog = [], 
     history: cloneHistory(base.history),
     flags: { ...base.flags },
     capabilities: { ...base.capabilities },
+    knowledge: { ...base.knowledge },
+    inventory: { ...base.inventory },
+    relationships: { ...base.relationships },
+    timers: { ...base.timers },
+    sceneState: cloneSceneState(base.sceneState),
     log: base.log.map((entry) => ({ ...entry })),
     revealedStorylets: { ...base.revealedStorylets },
     intentLog: base.intentLog.map((event) => ({
