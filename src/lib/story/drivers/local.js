@@ -1,6 +1,6 @@
 import { StoryDriver } from "../driver.js";
-import { ACTION_TYPES, INTERNAL_ACTION_TYPES, STATE_VERSION } from "../types.js";
-import { evaluateConditions } from "../eval/conditions.js";
+import { ACTION_TYPES, CHOICE_KINDS, INTERNAL_ACTION_TYPES, STATE_VERSION } from "../types.js";
+import { evaluateConditions, evaluateConditionsDetailed } from "../eval/conditions.js";
 import { applyEffects } from "../eval/effects.js";
 import { createIntentEvent, createRatifiedEvent } from "../events/types.js";
 import { validateGraph as validateGraphSchema } from "../dsl/validate.js";
@@ -25,6 +25,13 @@ function cloneLog(log) {
 
 function cloneEffectsList(effects = []) {
   return effects.map((effect) => ({ ...effect }));
+}
+
+function clonePlainData(value) {
+  if (value === null || value === undefined) {
+    return value;
+  }
+  return JSON.parse(JSON.stringify(value));
 }
 
 function cloneNumericMap(map = {}) {
@@ -164,6 +171,140 @@ function isValidSceneState(value) {
 
 function storyletPriority(storylet) {
   return Number.isFinite(storylet.priority) ? storylet.priority : 0;
+}
+
+function resolveChoiceKind(choice) {
+  if (choice?.kind && Object.values(CHOICE_KINDS).includes(choice.kind)) {
+    return choice.kind;
+  }
+  return choice?.to !== undefined ? CHOICE_KINDS.MOVE : CHOICE_KINDS.ACTION;
+}
+
+function summarizeChoice(choice) {
+  const summary = {
+    id: choice.id,
+    label: choice.label,
+    kind: resolveChoiceKind(choice)
+  };
+
+  if (choice.to !== undefined) {
+    summary.to = choice.to;
+  }
+
+  return summary;
+}
+
+function diffTruthyMap(before = {}, after = {}) {
+  const beforeKeys = new Set(Object.keys(before).filter((key) => before[key] === true));
+  const afterKeys = new Set(Object.keys(after).filter((key) => after[key] === true));
+  return {
+    gained: Array.from(afterKeys).filter((key) => !beforeKeys.has(key)),
+    lost: Array.from(beforeKeys).filter((key) => !afterKeys.has(key))
+  };
+}
+
+function diffNumericMap(before = {}, after = {}) {
+  const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
+  return Array.from(keys)
+    .map((key) => {
+      const previous = Number.isFinite(before[key]) ? before[key] : 0;
+      const next = Number.isFinite(after[key]) ? after[key] : 0;
+      if (previous === next) {
+        return null;
+      }
+      return {
+        key,
+        before: previous,
+        after: next,
+        delta: next - previous
+      };
+    })
+    .filter(Boolean);
+}
+
+function diffValueMap(before = {}, after = {}) {
+  const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
+  return Array.from(keys)
+    .map((key) => {
+      const previous = before[key];
+      const next = after[key];
+      if (previous === next) {
+        return null;
+      }
+      return {
+        key,
+        before: previous,
+        after: next
+      };
+    })
+    .filter(Boolean);
+}
+
+function diffSceneState(before = {}, after = {}) {
+  const scenes = new Set([...Object.keys(before), ...Object.keys(after)]);
+  const changes = [];
+
+  for (const scene of scenes) {
+    const previous = before[scene] ?? {};
+    const next = after[scene] ?? {};
+    const keys = new Set([...Object.keys(previous), ...Object.keys(next)]);
+    for (const key of keys) {
+      if (previous[key] !== next[key]) {
+        changes.push({
+          scene,
+          key,
+          before: previous[key],
+          after: next[key]
+        });
+      }
+    }
+  }
+
+  return changes;
+}
+
+function diffIdList(before = [], after = []) {
+  const beforeIds = new Set(before);
+  const afterIds = new Set(after);
+  return {
+    added: after.filter((id) => !beforeIds.has(id)),
+    removed: before.filter((id) => !afterIds.has(id))
+  };
+}
+
+function summaryLinesFromChangeSet(changeSet) {
+  const lines = [];
+
+  if (changeSet.navigation.didNavigate) {
+    lines.push(`Moved to ${changeSet.navigation.toTitle}`);
+  }
+
+  for (const key of changeSet.knowledge.gained) {
+    lines.push(`Learned ${key}`);
+  }
+  for (const item of changeSet.inventory) {
+    if (item.delta > 0) {
+      lines.push(`Picked up ${item.key} x${item.delta}`);
+    } else if (item.delta < 0) {
+      lines.push(`Used ${item.key} x${Math.abs(item.delta)}`);
+    }
+  }
+  for (const entry of changeSet.relationships) {
+    const prefix = entry.delta > 0 ? "+" : "";
+    lines.push(`${entry.key} ${prefix}${entry.delta}`);
+  }
+  for (const entry of changeSet.timers) {
+    const prefix = entry.delta > 0 ? "+" : "";
+    lines.push(`Timer ${entry.key} ${prefix}${entry.delta}`);
+  }
+  for (const change of changeSet.storylets.added) {
+    lines.push(`Revealed storylet: ${change}`);
+  }
+  for (const choice of changeSet.choices.added) {
+    lines.push(`Unlocked choice: ${choice}`);
+  }
+
+  return lines;
 }
 
 function isValidLogEntry(entry) {
@@ -483,6 +624,7 @@ export class LocalDriver extends StoryDriver {
     this._newlyRevealedStorylets = {};
     this._provisionalTail = [];
     this._provisionalUnsubscribe = null;
+    this._lastActionSummary = null;
   }
 
   async init() {
@@ -505,6 +647,7 @@ export class LocalDriver extends StoryDriver {
     }
 
     this._initialized = true;
+    this._lastActionSummary = null;
     this._bindProvisional();
 
     const revealsChangedState = await this._processStoryletReveals();
@@ -522,6 +665,7 @@ export class LocalDriver extends StoryDriver {
 
   async dispatch(action) {
     this._assertInitialized();
+    const beforeSnapshot = this._buildSnapshot({ consumeNewlyRevealed: false });
 
     const context = this._buildActionContext(action);
 
@@ -541,11 +685,20 @@ export class LocalDriver extends StoryDriver {
     await this._processStoryletReveals();
 
     await this._persist();
+    const afterSnapshot = this._buildSnapshot({ consumeNewlyRevealed: false });
+    const summary = this._summarizeTransition({
+      action,
+      before: beforeSnapshot,
+      after: afterSnapshot
+    });
+    this._lastActionSummary = summary;
     this._emit();
+    return clonePlainData(summary);
   }
 
   async applyEffects(effects = []) {
     this._assertInitialized();
+    const beforeSnapshot = this._buildSnapshot({ consumeNewlyRevealed: false });
 
     if (!effects.length) {
       return;
@@ -569,7 +722,17 @@ export class LocalDriver extends StoryDriver {
     await this._processStoryletReveals();
 
     await this._persist();
+    const afterSnapshot = this._buildSnapshot({ consumeNewlyRevealed: false });
+    const summary = this._summarizeTransition({
+      action: {
+        type: INTERNAL_ACTION_TYPES.APPLY_RATIFIED
+      },
+      before: beforeSnapshot,
+      after: afterSnapshot
+    });
+    this._lastActionSummary = summary;
     this._emit();
+    return clonePlainData(summary);
   }
 
   subscribe(cb) {
@@ -898,17 +1061,101 @@ export class LocalDriver extends StoryDriver {
     latest.payload = { ...(intentEvent.payload ?? {}) };
   }
 
+  _buildChoiceDiagnostics(node) {
+    const diagnostics = {
+      available: [],
+      unavailable: []
+    };
+
+    for (const choice of node.choices) {
+      const evaluation = evaluateConditionsDetailed(choice.requires ?? [], this._state);
+      const entry = {
+        ...summarizeChoice(choice)
+      };
+
+      if (evaluation.ok) {
+        diagnostics.available.push(entry);
+        continue;
+      }
+
+      diagnostics.unavailable.push({
+        ...entry,
+        failed: evaluation.details
+          .filter((detail) => detail.ok === false)
+          .map((detail) => ({
+            condition: { ...(detail.condition ?? {}) },
+            reason: { ...(detail.reason ?? {}) }
+          }))
+      });
+    }
+
+    return diagnostics;
+  }
+
+  _summarizeTransition({ action, before, after }) {
+    const beforeChoiceIds = before.availableChoices.map((choice) => choice.id);
+    const afterChoiceIds = after.availableChoices.map((choice) => choice.id);
+    const beforeStoryletIds = before.visibleStorylets.map((storylet) => storylet.id);
+    const afterStoryletIds = after.visibleStorylets.map((storylet) => storylet.id);
+    const actionChoice = action?.type === ACTION_TYPES.CHOOSE
+      ? before.choiceDiagnostics.available.find((choice) => choice.id === action.choiceId) ??
+        before.choiceDiagnostics.unavailable.find((choice) => choice.id === action.choiceId) ??
+        null
+      : null;
+
+    const navigation = {
+      didNavigate: before.node.id !== after.node.id,
+      fromNodeId: before.node.id,
+      toNodeId: after.node.id,
+      fromTitle: before.node.title ?? before.node.id,
+      toTitle: after.node.title ?? after.node.id
+    };
+
+    const knowledge = diffTruthyMap(before.knowledge, after.knowledge);
+    const capabilities = diffTruthyMap(before.capabilities, after.capabilities);
+    const choices = diffIdList(beforeChoiceIds, afterChoiceIds);
+    const storylets = diffIdList(beforeStoryletIds, afterStoryletIds);
+
+    const changeSet = {
+      action: {
+        type: action?.type ?? "unknown",
+        choiceId: actionChoice?.id ?? action?.choiceId,
+        choiceLabel: actionChoice?.label ?? null,
+        choiceKind: actionChoice?.kind ?? null
+      },
+      navigation,
+      flags: diffValueMap(before.flags, after.flags),
+      knowledge,
+      capabilities,
+      inventory: diffNumericMap(before.inventory, after.inventory),
+      relationships: diffNumericMap(before.relationships, after.relationships),
+      timers: diffNumericMap(before.timers, after.timers),
+      sceneState: diffSceneState(before.sceneState, after.sceneState),
+      storylets,
+      choices,
+      lines: []
+    };
+
+    changeSet.lines = summaryLinesFromChangeSet(changeSet);
+    return changeSet;
+  }
+
   _buildSnapshot({ consumeNewlyRevealed }) {
     const node = this._getNode(this._state.currentNodeId);
-    const availableChoices = node.choices.filter((choice) => {
-      return evaluateConditions(choice.requires ?? [], this._state);
-    });
+    const choiceDiagnostics = this._buildChoiceDiagnostics(node);
+    const availableChoices = node.choices
+      .filter((choice) => choiceDiagnostics.available.some((entry) => entry.id === choice.id))
+      .map((choice) => ({
+        ...choice,
+        kind: resolveChoiceKind(choice)
+      }));
 
     const logTail = this._state.log.slice(-this._tailLimit);
     const snapshot = {
       node,
       visibleStorylets: this._selectVisibleStorylets(node),
-      availableChoices: [...availableChoices],
+      availableChoices,
+      choiceDiagnostics: clonePlainData(choiceDiagnostics),
       history: cloneHistory(this._state.history),
       flags: { ...this._state.flags },
       capabilities: { ...this._state.capabilities },
@@ -917,6 +1164,8 @@ export class LocalDriver extends StoryDriver {
       relationships: cloneNumericMap(this._state.relationships),
       timers: cloneNumericMap(this._state.timers),
       sceneState: cloneSceneState(this._state.sceneState),
+      lastActionSummary: clonePlainData(this._lastActionSummary),
+      recentChanges: clonePlainData(this._lastActionSummary?.lines ?? []),
       logTail: cloneLog(logTail),
       provisionalTail: this._provisionalTail.map((item) => ({ ...item })),
       intentLog: cloneIntentLog(this._state.intentLog),

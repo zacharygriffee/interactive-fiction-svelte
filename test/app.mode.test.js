@@ -1,5 +1,5 @@
 import test from "brittle";
-import { getMode, hasStorySelection, isDevMode } from "../src/lib/app/mode.js";
+import { getMode, hasStorySelection, isDebugEnabled, isDevMode } from "../src/lib/app/mode.js";
 
 test("app mode: query mode override wins", (t) => {
   t.is(getMode({ search: "?mode=dev", appEnv: "production" }), "dev");
@@ -25,4 +25,9 @@ test("app mode: story selection detection", (t) => {
   t.is(hasStorySelection("?story=terminal-dossier"), true);
   t.is(hasStorySelection("?mode=dev"), false);
   t.is(hasStorySelection(""), false);
+});
+
+test("app mode: debug query flag works", (t) => {
+  t.is(isDebugEnabled("?debug=1"), true);
+  t.is(isDebugEnabled("?mode=dev"), false);
 });

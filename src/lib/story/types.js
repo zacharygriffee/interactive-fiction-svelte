@@ -13,6 +13,7 @@ export const EFFECT_TYPES = {
 };
 
 export const CONDITION_TYPES = {
+  NOT: "not",
   FLAG_TRUTHY: "flagTruthy",
   FLAG_EQUALS: "flagEquals",
   FLAG_GTE: "flagGte",
@@ -33,6 +34,12 @@ export const ACTION_TYPES = {
   ENTER_NODE: "ENTER_NODE",
   CHOOSE: "CHOOSE",
   GO_BACK: "GO_BACK"
+};
+
+export const CHOICE_KINDS = {
+  MOVE: "move",
+  ACTION: "action",
+  SYSTEM: "system"
 };
 
 export const INTERNAL_ACTION_TYPES = {

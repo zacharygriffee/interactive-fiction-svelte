@@ -107,6 +107,7 @@ test("dsl validate: requires and effects must be arrays", async (t) => {
 test("dsl validate: extended investigation conditions and effects validate", (t) => {
   const graph = clone(storyGraph);
   graph.nodesById.start.choices[0].requires = [
+    { type: "not", condition: { type: "flagTruthy", key: "alreadyUsed" } },
     { type: "knowledge", key: "nexusPattern" },
     { type: "inventoryGte", key: "signalChip", value: 1 },
     { type: "relationshipGte", name: "zephyr", value: 2 },
@@ -128,6 +129,14 @@ test("dsl validate: extended investigation conditions and effects validate", (t)
   t.pass();
 });
 
+test("dsl validate: negated condition requires nested condition payload", (t) => {
+  const graph = clone(storyGraph);
+  graph.nodesById.start.choices[0].requires = [{ type: "not", condition: null }];
+
+  const error = captureValidationError(() => validateGraph(graph));
+  t.is(error?.code, "E_CONDITION_NOT_CHILD_INVALID");
+});
+
 test("dsl validate: extended conditions and effects require numeric payloads where expected", (t) => {
   const brokenCondition = clone(storyGraph);
   brokenCondition.nodesById.start.choices[0].requires = [{ type: "inventoryGte", key: "signalChip", value: "many" }];
@@ -138,4 +147,12 @@ test("dsl validate: extended conditions and effects require numeric payloads whe
   brokenEffect.nodesById.start.choices[0].effects = [{ type: "addItem", key: "signalChip", amount: "many" }];
   const effectError = captureValidationError(() => validateGraph(brokenEffect));
   t.is(effectError?.code, "E_EFFECT_AMOUNT_INVALID");
+});
+
+test("dsl validate: choice kind must be known", (t) => {
+  const graph = clone(storyGraph);
+  graph.nodesById.start.choices[0].kind = "teleport";
+
+  const error = captureValidationError(() => validateGraph(graph));
+  t.is(error?.code, "E_CHOICE_KIND_UNKNOWN");
 });

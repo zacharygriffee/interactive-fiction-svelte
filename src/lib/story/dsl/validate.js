@@ -1,4 +1,4 @@
-import { CONDITION_TYPES, EFFECT_TYPES } from "../types.js";
+import { CHOICE_KINDS, CONDITION_TYPES, EFFECT_TYPES } from "../types.js";
 
 function isRecord(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -98,6 +98,10 @@ function validateCondition(condition, path) {
   assertString(condition.type, `${path}.type`, "E_CONDITION_TYPE_INVALID");
 
   switch (condition.type) {
+    case CONDITION_TYPES.NOT:
+      assertRecord(condition.condition, `${path}.condition`, "E_CONDITION_NOT_CHILD_INVALID");
+      validateCondition(condition.condition, `${path}.condition`);
+      return;
     case CONDITION_TYPES.FLAG_TRUTHY:
       assertString(condition.key, `${path}.key`, "E_CONDITION_KEY_INVALID");
       return;
@@ -271,6 +275,15 @@ function validateChoice(choice, nodeId, index, nodesById) {
   assertString(choice.id, `${path}.id`, "E_CHOICE_ID_INVALID");
   assertString(choice.label, `${path}.label`, "E_CHOICE_LABEL_INVALID");
   assertOptionalString(choice.to, `${path}.to`, "E_CHOICE_TO_INVALID");
+  assertOptionalString(choice.kind, `${path}.kind`, "E_CHOICE_KIND_INVALID");
+
+  if (choice.kind !== undefined && !Object.values(CHOICE_KINDS).includes(choice.kind)) {
+    fail({
+      code: "E_CHOICE_KIND_UNKNOWN",
+      path: `${path}.kind`,
+      message: `unknown choice kind "${choice.kind}"`
+    });
+  }
 
   if (choice.to !== undefined && !nodesById[choice.to]) {
     fail({

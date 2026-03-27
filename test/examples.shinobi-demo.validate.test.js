@@ -10,6 +10,16 @@ function listChoices(graph) {
   return Object.values(graph.nodesById).flatMap((node) => (Array.isArray(node.choices) ? node.choices : []));
 }
 
+function hasConditionType(condition, type) {
+  if (!condition || typeof condition !== "object") {
+    return false;
+  }
+  if (condition.type === type) {
+    return true;
+  }
+  return hasConditionType(condition.condition, type);
+}
+
 test("shinobi demo example: graph validates", (t) => {
   validateGraph(storyGraph);
 
@@ -44,6 +54,11 @@ test("shinobi demo example: extended investigation mechanics are present", (t) =
   t.ok(
     choices.some((choice) =>
       (choice.effects ?? []).some((effect) => effect?.type === "setSceneFlag")
+    )
+  );
+  t.ok(
+    choices.some((choice) =>
+      (choice.requires ?? []).some((condition) => hasConditionType(condition, "not"))
     )
   );
 });

@@ -13,17 +13,28 @@ test("local snapshot: choice filtering respects conditions", async (t) => {
 
   await driver.init();
 
-  let ids = driver.getSnapshot().availableChoices.map((choice) => choice.id);
+  let snapshot = driver.getSnapshot();
+  let ids = snapshot.availableChoices.map((choice) => choice.id);
   t.absent(ids.includes("to-lab"));
   t.absent(ids.includes("to-secret"));
+  t.ok(snapshot.choiceDiagnostics.unavailable.some((choice) => choice.id === "to-lab"));
+  t.ok(
+    snapshot.choiceDiagnostics.unavailable
+      .find((choice) => choice.id === "to-lab")
+      ?.failed.some((item) => item.reason?.message.includes("keycard"))
+  );
 
   await driver.dispatch({ type: ACTION_TYPES.CHOOSE, choiceId: "set-keycard" });
-  ids = driver.getSnapshot().availableChoices.map((choice) => choice.id);
+  snapshot = driver.getSnapshot();
+  ids = snapshot.availableChoices.map((choice) => choice.id);
   t.absent(ids.includes("to-lab"));
+  t.ok(snapshot.choiceDiagnostics.unavailable.some((choice) => choice.id === "to-lab"));
 
   await driver.dispatch({ type: ACTION_TYPES.CHOOSE, choiceId: "set-stage" });
-  ids = driver.getSnapshot().availableChoices.map((choice) => choice.id);
+  snapshot = driver.getSnapshot();
+  ids = snapshot.availableChoices.map((choice) => choice.id);
   t.ok(ids.includes("to-lab"));
+  t.absent(snapshot.choiceDiagnostics.unavailable.some((choice) => choice.id === "to-lab"));
 
   const capabilityDriver = new LocalDriver({
     graph: createStoryGraph(),
@@ -77,6 +88,8 @@ test("local snapshot: mutating returned snapshot does not mutate driver state", 
   first.relationships.fake = 9;
   first.timers.fake = 9;
   first.sceneState.injected = { open: true };
+  first.lastActionSummary.lines.push("fake");
+  first.choiceDiagnostics.unavailable.push({ id: "fake", label: "fake" });
   first.history.push({ nodeId: "lab", viaChoiceId: "x", at: 9999 });
   first.availableChoices.pop();
   first.logTail.push({ level: "warn", text: "mutated", at: 1 });
@@ -90,6 +103,8 @@ test("local snapshot: mutating returned snapshot does not mutate driver state", 
   t.absent(second.relationships.fake);
   t.absent(second.timers.fake);
   t.absent(second.sceneState.injected);
+  t.absent(second.lastActionSummary?.lines?.includes("fake"));
+  t.absent(second.choiceDiagnostics.unavailable.some((choice) => choice.id === "fake"));
   t.is(second.history.length, 2);
   t.ok(second.availableChoices.length >= 1);
   t.is(second.logTail.length, 0);

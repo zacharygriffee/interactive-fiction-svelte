@@ -51,6 +51,7 @@ export const terminalDossierAuthorGraph = {
       ]),
       choices([
         choice("probe-handshake", "Probe handshake buffer", undefined, {
+          requires: [requires.not(requires.flag("probePrimed"))],
           effects: [
             fx.set("probePrimed", true),
             fx.pushLog("info", "ACTION: probe-handshake")
@@ -72,6 +73,7 @@ export const terminalDossierAuthorGraph = {
           effects: [fx.pushLog("warn", "ACTION: watcher banner returned static")]
         }),
         choice("cache-operator-sig", "Cache operator signature", undefined, {
+          requires: [requires.not(requires.knowledge("operatorHash"))],
           effects: [
             fx.learn("operatorHash"),
             fx.addItem("traceKey", 1),
@@ -93,12 +95,14 @@ export const terminalDossierAuthorGraph = {
       tags("mid"),
       choices([
         choice("probe-corridor-camera", "Probe corridor camera loop", undefined, {
+          requires: [requires.not(requires.flag("corridorProbed"))],
           effects: [
             fx.set("corridorProbed", true),
             fx.pushLog("info", "TRACE: corridor camera loop sampled")
           ]
         }),
         choice("mark-service-door", "Mark the service door for later exit", undefined, {
+          requires: [requires.not(requires.scene("witness_chamber", "serviceDoorOpen", true))],
           effects: [
             fx.setSceneFlag("witness_chamber", "serviceDoorOpen", true),
             fx.pushLog("info", "TRACE: witness chamber backdoor marked")
@@ -121,18 +125,21 @@ export const terminalDossierAuthorGraph = {
       ]),
       choices([
         choice("read-manifest", "Read shipment manifest", undefined, {
+          requires: [requires.not(requires.flag("manifestRead"))],
           effects: [
             fx.set("manifestRead", true),
             fx.pushLog("info", "ACTION: manifest snapshot captured")
           ]
         }),
         choice("extract-trace-key", "Extract trace key shard", undefined, {
+          requires: [requires.not(requires.item("traceKey"))],
           effects: [
             fx.addItem("traceKey", 1),
             fx.pushLog("info", "ACTION: trace key shard extracted")
           ]
         }),
         choice("probe-index-lattice", "Probe archive index lattice", undefined, {
+          requires: [requires.not(requires.flag("archiveProbed"))],
           effects: [
             fx.set("archiveProbed", true),
             fx.pushLog("info", "TRACE: archive index probe recorded")
@@ -160,6 +167,7 @@ export const terminalDossierAuthorGraph = {
       ]),
       choices([
         choice("align-relay", "Align relay timestamps", undefined, {
+          requires: [requires.not(requires.flag("relayAligned"))],
           effects: [
             fx.set("relayAligned", true),
             fx.pushLog("info", "ACTION: relay timestamps aligned")
@@ -178,6 +186,7 @@ export const terminalDossierAuthorGraph = {
       body("Strips of erased text float above a warm scanner bed."),
       choices([
         choice("lift-redaction", "Lift redaction mask", undefined, {
+          requires: [requires.not(requires.flag("redactionLifted"))],
           effects: [
             fx.set("redactionLifted", true),
             fx.pushLog("info", "ACTION: redaction mask lifted")
@@ -205,12 +214,14 @@ export const terminalDossierAuthorGraph = {
       ]),
       choices([
         choice("probe-memory-loop", "Probe memory loop", undefined, {
+          requires: [requires.not(requires.flag("memoryProbe"))],
           effects: [
             fx.set("memoryProbe", true),
             fx.pushLog("info", "TRACE: memory loop probe complete")
           ]
         }),
         choice("stabilize-agent-link", "Stabilize the agent link", undefined, {
+          requires: [requires.not(requires.knowledge("agentLink"))],
           effects: [
             fx.adjustRelationship("liaison", 2),
             fx.setTimer("liaisonWindow", 2),
@@ -227,6 +238,7 @@ export const terminalDossierAuthorGraph = {
       body("A biometric gate keeps reopening, as if waiting for a face it already knows."),
       choices([
         choice("spoof-clearance", "Spoof quarantine clearance", undefined, {
+          requires: [requires.not(requires.flag("spoofClearance"))],
           effects: [
             fx.set("spoofClearance", true),
             fx.pushLog("warn", "ACTION: quarantine clearance spoofed")
@@ -258,6 +270,7 @@ export const terminalDossierAuthorGraph = {
       ]),
       choices([
         choice("probe-reflection", "Probe reflection latency", undefined, {
+          requires: [requires.not(requires.flag("reflectionProbed"))],
           effects: [
             fx.set("reflectionProbed", true),
             fx.pushLog("info", "TRACE: reflection latency sampled")
@@ -296,6 +309,7 @@ export const terminalDossierAuthorGraph = {
       ]),
       choices([
         choice("interrogate-witness", "Interrogate witness transcript", undefined, {
+          requires: [requires.not(requires.flag("witnessSpoken"))],
           effects: [
             fx.set("witnessSpoken", true),
             fx.pushLog("info", "ACTION: witness transcript interrogated")
@@ -326,6 +340,7 @@ export const terminalDossierAuthorGraph = {
       body("Cold air carries fragments of commands from rooms below."),
       choices([
         choice("tap-vent-grid", "Tap vent relay", undefined, {
+          requires: [requires.not(requires.flag("ventTapped"))],
           effects: [
             fx.set("ventTapped", true),
             fx.pushLog("info", "ACTION: vent relay tapped")
@@ -359,6 +374,7 @@ export const terminalDossierAuthorGraph = {
       ]),
       choices([
         choice("probe-root-daemon", "Probe root daemon", undefined, {
+          requires: [requires.not(requires.flag("rootDaemonProbed"))],
           effects: [
             fx.set("rootDaemonProbed", true),
             fx.pushLog("warn", "TRACE: root daemon probe returned mirrored PID")
@@ -367,7 +383,8 @@ export const terminalDossierAuthorGraph = {
         choice("compile-dossier", "Compile dossier packet", undefined, {
           requires: [
             requires.cap("cap.deepDossier"),
-            requires.flag("manifestRead")
+            requires.flag("manifestRead"),
+            requires.not(requires.flag("dossierCompiled"))
           ],
           effects: [
             fx.set("dossierCompiled", true),
@@ -425,6 +442,7 @@ export const terminalDossierAuthorGraph = {
       ]),
       choices([
         choice("transmit-dossier", "Transmit dossier", undefined, {
+          requires: [requires.not(requires.flag("transmitted"))],
           effects: [
             fx.set("transmitted", true),
             fx.inc("steps", 1),

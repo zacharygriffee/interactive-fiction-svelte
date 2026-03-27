@@ -80,6 +80,7 @@ test("local driver: CHOOSE applies effects and navigates", async (t) => {
   t.is(snapshot.logTail[0].text, "Moved to grove");
   t.is(last.nodeId, "grove");
   t.is(last.viaChoiceId, "to-grove");
+  t.is(snapshot.availableChoices.find((choice) => choice.id === "grove-to-start")?.kind, "move");
 });
 
 test("local driver: invalid choice throws", async (t) => {
@@ -172,4 +173,26 @@ test("local driver: ratified log grows and grants are applied by ratifier", asyn
   await driver.dispatch({ type: ACTION_TYPES.CHOOSE, choiceId: "reflect" });
   snapshot = driver.getSnapshot();
   t.ok(snapshot.capabilities["cap.askAgent"]);
+});
+
+test("local driver: dispatch returns structured action summary", async (t) => {
+  const driver = new LocalDriver({
+    graph: createStoryGraph(),
+    storage: new MemoryStorage(),
+    clock: createClock({ start: 800, step: 5 })
+  });
+
+  await driver.init();
+  const result = await driver.dispatch({ type: ACTION_TYPES.CHOOSE, choiceId: "collect-chip" });
+  const snapshot = driver.getSnapshot();
+
+  t.is(result.action.type, ACTION_TYPES.CHOOSE);
+  t.is(result.action.choiceId, "collect-chip");
+  t.is(result.action.choiceKind, "action");
+  t.is(result.navigation.didNavigate, false);
+  t.ok(result.inventory.some((entry) => entry.key === "signalChip" && entry.delta === 1));
+  t.ok(result.timers.some((entry) => entry.key === "pursuit" && entry.delta === 1));
+  t.ok(result.lines.includes("Picked up signalChip x1"));
+  t.alike(snapshot.lastActionSummary, result);
+  t.alike(snapshot.recentChanges, result.lines);
 });

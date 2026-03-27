@@ -63,3 +63,8 @@ export function hasStorySelection(search = getRuntimeSearch()) {
   const story = params.get("story");
   return typeof story === "string" && story.length > 0;
 }
+
+export function isDebugEnabled(search = getRuntimeSearch()) {
+  const params = new URLSearchParams(search);
+  return params.get("debug") === "1";
+}

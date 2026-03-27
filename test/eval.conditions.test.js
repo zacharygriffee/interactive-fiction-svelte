@@ -54,6 +54,42 @@ test("conditions: AND semantics", (t) => {
   );
 });
 
+test("conditions: negation wrapper inverts nested conditions", (t) => {
+  const state = {
+    flags: { a: true },
+    capabilities: {},
+    knowledge: { seen: true },
+    inventory: { chip: 1 },
+    history: [],
+    intentLog: []
+  };
+
+  t.is(
+    evaluateCondition(
+      { type: "not", condition: { type: "flagTruthy", key: "missing" } },
+      state
+    ),
+    true
+  );
+  t.is(
+    evaluateCondition(
+      { type: "not", condition: { type: "knowledge", key: "seen" } },
+      state
+    ),
+    false
+  );
+  t.is(
+    evaluateConditions(
+      [
+        { type: "inventoryHas", key: "chip" },
+        { type: "not", condition: { type: "flagTruthy", key: "used" } }
+      ],
+      state
+    ),
+    true
+  );
+});
+
 test("conditions: unknown condition throws", async (t) => {
   await t.exception(() => {
     evaluateCondition({ type: "unknown-type" }, { flags: {}, capabilities: {}, history: [], intentLog: [] });

@@ -35,7 +35,7 @@ export class EcologyDriver extends StoryDriver {
   }
 
   async dispatch(action) {
-    await this._local.dispatch(action);
+    return this._local.dispatch(action);
   }
 
   subscribe(cb) {
@@ -54,7 +54,7 @@ export class EcologyDriver extends StoryDriver {
   }
 
   async applyRatified(effects) {
-    await this._local.applyEffects(effects ?? []);
+    return this._local.applyEffects(effects ?? []);
   }
 
   _emit() {

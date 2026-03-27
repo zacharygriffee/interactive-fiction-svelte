@@ -51,7 +51,7 @@ export function storylets(arrayOfStorylets) {
   return { storylets: copyArray(arrayOfStorylets) };
 }
 
-const CHOICE_ALLOWED_OPTS = new Set(["requires", "effects"]);
+const CHOICE_ALLOWED_OPTS = new Set(["requires", "effects", "kind"]);
 
 export function choice(id, label, to, opts = {}) {
   assertString(id, "choice(id, label, to, opts): id");
@@ -75,6 +75,9 @@ export function choice(id, label, to, opts = {}) {
   if (opts.effects !== undefined) {
     assertArray(opts.effects, "choice(...).opts.effects");
   }
+  if (opts.kind !== undefined) {
+    assertString(opts.kind, "choice(...).opts.kind");
+  }
 
   const result = {
     id,
@@ -89,6 +92,9 @@ export function choice(id, label, to, opts = {}) {
   }
   if (opts.effects !== undefined) {
     result.effects = copyArray(opts.effects);
+  }
+  if (opts.kind !== undefined) {
+    result.kind = opts.kind;
   }
 
   return result;
@@ -209,6 +215,14 @@ export function graph({ start, nodes }) {
 }
 
 export const requires = {
+  not(condition) {
+    assertRecord(condition, "requires.not(condition)");
+    assertString(condition.type, "requires.not(condition): condition.type");
+    return {
+      type: "not",
+      condition
+    };
+  },
   flag(key) {
     assertString(key, "requires.flag(key)");
     return {
