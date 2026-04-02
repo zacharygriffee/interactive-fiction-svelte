@@ -23,9 +23,14 @@
     "validate-assets": "node scripts/validate-assets.js",
     "watch-build": "nodemon --watch src --ext js,svelte --exec 'npm run build'",
     "test": "brittle test/*.test.js",
+    "test:smoke": "playwright test --config=playwright.config.js",
+    "test:browser": "playwright test --config=playwright.browser.config.js",
+    "test:ci": "npm run validate-graph:all && npm run validate-assets && npm test && npm run build && npm run test:smoke",
+    "test:full": "npm run validate-graph:all && npm run validate-assets && npm test && npm run build && npm run test:smoke && npm run test:browser",
     "clean": "rm -rf dist"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@rollup/plugin-alias": "^5.1.1",
     "@rollup/plugin-commonjs": "^28.0.2",
     "@rollup/plugin-node-resolve": "^16.0.0",

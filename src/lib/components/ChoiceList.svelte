@@ -2,15 +2,21 @@
   let { choices = [], lockedChoices = [], showLockedChoices = false, onChoose = () => {} } = $props();
 </script>
 
-<section>
+<section data-testid="choices-panel">
   <h3>Choices</h3>
   {#if choices.length === 0}
     <p>No available choices.</p>
   {:else}
-    <ul class="choice-list">
+    <ul class="choice-list" data-testid="choices-list">
       {#each choices as choice}
         <li>
-          <button type="button" class:move={choice.kind === "move"} class:system={choice.kind === "system"} onclick={() => onChoose(choice.id)}>
+          <button
+            type="button"
+            data-testid={`choice-${choice.id}`}
+            class:move={choice.kind === "move"}
+            class:system={choice.kind === "system"}
+            onclick={() => onChoose(choice.id)}
+          >
             <span>{choice.label}</span>
             <small>{choice.kind === "move" ? "Move" : choice.kind === "system" ? "System" : "Action"}</small>
           </button>
@@ -20,12 +26,18 @@
   {/if}
 
   {#if showLockedChoices && lockedChoices.length > 0}
-    <div class="locked-panel">
+    <div class="locked-panel" data-testid="locked-choices-panel">
       <h4>Locked Choices</h4>
       <ul class="choice-list locked-list">
         {#each lockedChoices as choice}
           <li>
-            <button type="button" disabled class:move={choice.kind === "move"} class:system={choice.kind === "system"}>
+            <button
+              type="button"
+              data-testid={`locked-choice-${choice.id}`}
+              disabled
+              class:move={choice.kind === "move"}
+              class:system={choice.kind === "system"}
+            >
               <span>{choice.label}</span>
               <small>{choice.kind === "move" ? "Move" : choice.kind === "system" ? "System" : "Action"}</small>
             </button>

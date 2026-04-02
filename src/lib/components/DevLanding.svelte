@@ -34,16 +34,16 @@
   }
 </script>
 
-<section class="dev-landing">
+<section class="dev-landing" data-testid="landing-view">
   <h2>Example Selector</h2>
   <p>
     interactive-fiction-svelte is a Svelte host for a deterministic interactive fiction core.
     Pick an example to play or inspect, then use the runtime and tooling links below for deeper validation.
   </p>
 
-  <div class="story-grid">
+  <div class="story-grid" data-testid="landing-story-grid">
     {#each stories as story}
-      <article class="story-card">
+      <article class="story-card" data-testid={`story-card-${story.id}`}>
         <div class="story-copy">
           <p class="story-tone">{story.tone}</p>
           <h3>{story.title}</h3>

@@ -85,6 +85,10 @@ Future ecology integration should plug in via custom Authority + Provisional ada
 - `npm run validate-graph:all` validates default + in-repo example graphs.
 - `npm run validate-assets` validates `/assets/...` references in known graphs and reports missing/unused files.
 - `npm run test` runs brittle tests for non-UI story logic.
+- `npm run test:smoke` runs the Playwright smoke test against the built `dist/` app (Chromium locally; Chromium + Firefox in CI).
+- `npm run test:browser` runs the deeper Playwright browser-flow suite against the built `dist/` app (Chromium only).
+- `npm run test:ci` runs the full local CI sequence, including browser smoke coverage.
+- `npm run test:full` runs the CI sequence plus the deeper browser-flow suite.
 
 ## Runtime URL Controls
 

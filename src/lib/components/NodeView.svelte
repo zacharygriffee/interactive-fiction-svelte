@@ -2,14 +2,16 @@
   let { node, visibleStorylets = [] } = $props();
 </script>
 
-<section>
-  <h2>{node.title ?? node.id}</h2>
-  <div class="passage-body">{@html node.body ?? ""}</div>
+<section data-testid="node-view">
+  <h2 data-testid="node-title">{node.title ?? node.id}</h2>
+  <div class="passage-body" data-testid="node-body">{@html node.body ?? ""}</div>
   {#if visibleStorylets.length > 0}
-    <hr />
-    {#each visibleStorylets as storylet}
-      <div class="storylet-body">{@html storylet.body ?? ""}</div>
-    {/each}
+    <div data-testid="node-storylets">
+      <hr />
+      {#each visibleStorylets as storylet}
+        <div class="storylet-body">{@html storylet.body ?? ""}</div>
+      {/each}
+    </div>
   {/if}
   {#if node.tags?.length}
     <p><strong>Tags:</strong> {node.tags.join(", ")}</p>

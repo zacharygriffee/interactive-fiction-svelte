@@ -120,12 +120,36 @@ function parseArgs(argv = process.argv.slice(2)) {
 }
 
 async function readStdinText() {
-  process.stdin.setEncoding("utf8");
-  let text = "";
-  for await (const chunk of process.stdin) {
-    text += chunk;
-  }
-  return text;
+  return new Promise((resolveRead, rejectRead) => {
+    process.stdin.setEncoding("utf8");
+
+    let text = "";
+
+    function cleanup() {
+      process.stdin.off("data", onData);
+      process.stdin.off("end", onEnd);
+      process.stdin.off("error", onError);
+    }
+
+    function onData(chunk) {
+      text += chunk;
+    }
+
+    function onEnd() {
+      cleanup();
+      resolveRead(text);
+    }
+
+    function onError(error) {
+      cleanup();
+      rejectRead(error);
+    }
+
+    process.stdin.on("data", onData);
+    process.stdin.on("end", onEnd);
+    process.stdin.on("error", onError);
+    process.stdin.resume();
+  });
 }
 
 async function loadInputJson(options) {

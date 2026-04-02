@@ -6,7 +6,7 @@
   const recentLines = $derived(snapshot?.recentChanges ?? []);
 </script>
 
-<section class="debug-panel">
+<section class="debug-panel" data-testid="debug-panel">
   <div class="debug-header">
     <h3>Developer Console</h3>
     <div class="tabs">

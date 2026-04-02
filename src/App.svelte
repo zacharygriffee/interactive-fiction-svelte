@@ -101,8 +101,9 @@
 
   {#if showRuntime}
     {#if snapshot}
+      <section data-testid="runtime-view">
       {#if lastActionSummary}
-        <section class="action-feedback">
+        <section class="action-feedback" data-testid="recent-outcome-panel">
           <div class="action-feedback__header">
             <h3>Recent Outcome</h3>
             {#if canShowConsole}
@@ -147,6 +148,7 @@
       {#if canShowConsole && showConsole}
         <DebugPanel snapshot={snapshot} />
       {/if}
+      </section>
     {:else}
       <p>Loading...</p>
     {/if}

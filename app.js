@@ -11,7 +11,7 @@ function createPearApi() {
 
 async function renderApp(target) {
   try {
-    const { mountApp } = await import("./dist/entry.js");
+    const { mountApp } = await import("./entry.js");
     mountApp({
       target,
       props: {

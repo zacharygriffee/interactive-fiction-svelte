@@ -1,5 +1,7 @@
 # Build output
 dist/
+playwright-report/
+test-results/
 
 # Dependencies
 node_modules
@@ -18,6 +20,7 @@ Thumbs.db
 # Editors / IDEs
 .idea/
 .vscode/
+.codex
 *.swp
 *.swo
 
