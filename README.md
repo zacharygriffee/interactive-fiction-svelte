@@ -2,9 +2,20 @@
 
 Standalone interactive fiction runtime built with Svelte and a strict StoryDriver boundary.
 
+## Install
+
+```bash
+npm install interactive-fiction-svelte
+```
+
+```js
+import { createDriver, graph, node, choice, choices, body } from "interactive-fiction-svelte";
+import { defaultStoryGraph, terminalDossierGraph } from "interactive-fiction-svelte/examples";
+```
+
 ## Public API Surface
 
-This package now exposes a stable public surface at `src/lib/index.js` (also package export `.`).
+This package exposes a stable runtime/library surface from the package root export `interactive-fiction-svelte`.
 
 Public-by-convention exports include:
 - Driver/runtime entry points (`createDriver`, `StoryDriver`, `replay`)
@@ -13,6 +24,9 @@ Public-by-convention exports include:
 - Port assertions and default local adapters
 - Canonicalization/checkpoint helpers for attestation-ready artifacts
 - Identity artifact helpers for portable proof-of-work seeds
+- Example graphs via `interactive-fiction-svelte/examples`
+
+The package is runtime-first. The in-repo app shell, browser entrypoints, workflows, and tests are not part of the semver-stable package surface.
 
 ## Identity Artifacts
 
@@ -78,6 +92,7 @@ Future ecology integration should plug in via custom Authority + Provisional ada
 
 ## Scripts
 
+- Package consumers normally only use the root exports and example exports; these scripts are for working in this repo.
 - `npm run dev` starts rollup watch + serves `dist/` on `http://localhost:4173` with Dev helpers.
 - `npm run build` builds the Svelte bundle and prepares Play-mode dist shell.
 - `npm run start` prepares and serves `dist/` on `http://localhost:4173` in Play mode.
@@ -89,6 +104,7 @@ Future ecology integration should plug in via custom Authority + Provisional ada
 - `npm run test:browser` runs the deeper Playwright browser-flow suite against the built `dist/` app (Chromium only).
 - `npm run test:ci` runs the full local CI sequence, including browser smoke coverage.
 - `npm run test:full` runs the CI sequence plus the deeper browser-flow suite.
+- GitHub Actions keeps the browser-flow suite in a separate `Browser Flows` workflow so the main PR gate stays fast; run it manually or let the nightly schedule cover it.
 
 ## Runtime URL Controls
 
@@ -102,7 +118,7 @@ Future ecology integration should plug in via custom Authority + Provisional ada
 ## Compatibility / Versioning Policy
 
 - Semver intent:
-  - Changes to exports from `src/lib/index.js` follow semver compatibility.
+  - Changes to the root package export and `interactive-fiction-svelte/examples` follow semver compatibility.
   - Deep internal paths are not semver-stable.
 - Port contract changes:
   - Adding optional fields is preferred.

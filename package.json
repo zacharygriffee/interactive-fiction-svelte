@@ -2,12 +2,23 @@
   "name": "interactive-fiction-svelte",
   "version": "0.6.0",
   "type": "module",
-  "main": "index.html",
+  "main": "./src/lib/index.js",
+  "sideEffects": false,
   "exports": {
     ".": "./src/lib/index.js",
     "./package.json": "./package.json",
     "./examples": "./examples/index.js"
   },
+  "files": [
+    "src/lib/index.js",
+    "src/lib/adapters",
+    "src/lib/identity",
+    "src/lib/ports",
+    "src/lib/story",
+    "examples",
+    "README.md",
+    "LICENSE"
+  ],
   "license": "MIT",
   "scripts": {
     "build": "rollup -c && npm run prepare-dist:play",
