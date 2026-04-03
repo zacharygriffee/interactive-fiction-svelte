@@ -99,3 +99,20 @@ When adding ecology integration, implement new adapters for:
 - optional proof identity/signing
 
 Keep driver/runtime semantics stable; wire integrations through ports instead of embedding transport logic in core.
+
+## Boundary Note
+
+This repo owns the deterministic runtime and the extension seams.
+It does not own the product-specific concern-surface bridge for mesh ecology.
+
+Use this repo for:
+- stable runtime contracts
+- deterministic local adapters
+- replay, receipts, checkpoints, and identity artifacts
+
+Do not use this repo for:
+- concern-surface doctrine
+- packs-facing deployment posture
+- product-specific mesh translation semantics
+
+That bridge work should live in the adjacent `../interactive-fiction-concern-surface` repo so core remains mesh-agnostic.

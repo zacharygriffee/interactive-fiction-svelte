@@ -90,6 +90,11 @@ Authoring rules:
 Default local adapters live in `src/lib/adapters/` and keep behavior deterministic without mesh transport.
 Future ecology integration should plug in via custom Authority + Provisional adapters.
 
+Boundary note:
+- This repo owns the mesh-agnostic runtime seams, not the product-specific concern-surface bridge.
+- Mesh concern-surface doctrine and bridge design should live in the adjacent `../interactive-fiction-concern-surface` repo.
+- If future integration work starts introducing mesh deployment vocabulary or product-specific bridge semantics here, that work likely belongs in the adjacent repo instead.
+
 ## Scripts
 
 - Package consumers normally only use the root exports and example exports; these scripts are for working in this repo.
